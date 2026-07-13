@@ -1,0 +1,7 @@
+dist
+dist-ssr
+node_modules
+tmp
+travel-map-prototype
+src/auto-imports.d.ts
+src/components.d.ts

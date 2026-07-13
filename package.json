@@ -1,0 +1,40 @@
+{
+  "name": "travel-map-website",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --fix",
+    "format": "prettier --write src/"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.45.0",
+    "echarts": "^5.5.0",
+    "element-plus": "^2.8.0",
+    "pinia": "^2.2.0",
+    "pinyin-pro": "^3.24.0",
+    "vue": "^3.5.39",
+    "vue-router": "^4.4.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.2",
+    "@vitejs/plugin-vue": "^6.0.7",
+    "@vue/eslint-config-prettier": "^10.0.0",
+    "@vue/eslint-config-typescript": "^14.0.0",
+    "@vue/tsconfig": "^0.9.1",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.0.0",
+    "eslint-plugin-vue": "^9.28.0",
+    "postcss": "^8.4.47",
+    "prettier": "^3.3.0",
+    "tailwindcss": "^3.4.13",
+    "typescript": "~6.0.2",
+    "unplugin-auto-import": "^0.18.3",
+    "unplugin-vue-components": "^0.27.4",
+    "vite": "^8.1.1",
+    "vue-tsc": "^3.3.5"
+  }
+}

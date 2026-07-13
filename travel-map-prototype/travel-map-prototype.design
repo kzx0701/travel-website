@@ -1,0 +1,313 @@
+{
+  "data": [
+    {
+      "id": "page-login",
+      "title": "登录",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752436800000,
+      "canvasData": {
+        "x": 820,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/login.html",
+        "interactions": [
+          {
+            "domId": "link-register",
+            "targetPageId": "page-register"
+          },
+          {
+            "domId": "btn-login",
+            "targetPageId": "page-map"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-register",
+      "title": "注册",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752436800000,
+      "canvasData": {
+        "x": 200,
+        "y": 0,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/register.html",
+        "interactions": [
+          {
+            "domId": "link-login",
+            "targetPageId": "page-login"
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-map",
+      "title": "地图主页",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752436800000,
+      "canvasData": {
+        "x": 200,
+        "y": 384,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/map.html",
+        "interactions": [
+          {
+            "domId": "nav-statistics",
+            "targetPageId": "page-statistics"
+          },
+          {
+            "domId": "nav-timeline-hidden",
+            "targetPageId": "page-timeline",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-profile-hidden",
+            "targetPageId": "page-profile",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-settings-hidden",
+            "targetPageId": "page-settings",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-map-city-detail",
+      "title": "城市详情",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752436800000,
+      "canvasData": {
+        "x": 0,
+        "y": 861,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/map-city-detail.html",
+        "interactions": [
+          {
+            "domId": "back-to-map",
+            "targetPageId": "page-map",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-map-hidden",
+            "targetPageId": "page-map",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-statistics-hidden",
+            "targetPageId": "page-statistics",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-timeline-hidden",
+            "targetPageId": "page-timeline",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-profile-hidden",
+            "targetPageId": "page-profile",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-settings-hidden",
+            "targetPageId": "page-settings",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-map-add-record",
+      "title": "添加记录",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752436800000,
+      "canvasData": {
+        "x": 620,
+        "y": 861,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/map-add-record.html",
+        "interactions": [
+          {
+            "domId": "back-to-detail",
+            "targetPageId": "page-map-city-detail",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-statistics",
+      "title": "统计",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752436800000,
+      "canvasData": {
+        "x": 820,
+        "y": 384,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/statistics.html",
+        "interactions": [
+          {
+            "domId": "nav-timeline",
+            "targetPageId": "page-timeline"
+          },
+          {
+            "domId": "nav-map-hidden",
+            "targetPageId": "page-map",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-profile-hidden",
+            "targetPageId": "page-profile",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-settings-hidden",
+            "targetPageId": "page-settings",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-timeline",
+      "title": "时间线",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752436800000,
+      "canvasData": {
+        "x": 1440,
+        "y": 384,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/timeline.html",
+        "interactions": [
+          {
+            "domId": "nav-profile",
+            "targetPageId": "page-profile"
+          },
+          {
+            "domId": "nav-map-hidden",
+            "targetPageId": "page-map",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-statistics-hidden",
+            "targetPageId": "page-statistics",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-settings-hidden",
+            "targetPageId": "page-settings",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-profile",
+      "title": "个人主页",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752436800000,
+      "canvasData": {
+        "x": 2060,
+        "y": 384,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/profile.html",
+        "interactions": [
+          {
+            "domId": "nav-settings",
+            "targetPageId": "page-settings"
+          },
+          {
+            "domId": "nav-map-hidden",
+            "targetPageId": "page-map",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-statistics-hidden",
+            "targetPageId": "page-statistics",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-timeline-hidden",
+            "targetPageId": "page-timeline",
+            "hideEdge": true
+          }
+        ]
+      }
+    },
+    {
+      "id": "page-settings",
+      "title": "设置",
+      "type": "page",
+      "version": 1,
+      "createdAt": 1752436800000,
+      "canvasData": {
+        "x": 2680,
+        "y": 384,
+        "group": 0
+      },
+      "devMetadata": {
+        "htmlSrc": "pages/settings.html",
+        "interactions": [
+          {
+            "domId": "nav-map-hidden",
+            "targetPageId": "page-map",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-statistics-hidden",
+            "targetPageId": "page-statistics",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-timeline-hidden",
+            "targetPageId": "page-timeline",
+            "hideEdge": true
+          },
+          {
+            "domId": "nav-profile-hidden",
+            "targetPageId": "page-profile",
+            "hideEdge": true
+          }
+        ]
+      }
+    }
+  ],
+  "config": {
+    "autoLayout": true,
+    "deviceType": "desktop",
+    "projectName": "旅行足迹地图原型",
+    "designLibrary": {
+      "name": "极简",
+      "id": "dl_builtin_minimalist",
+      "version": null,
+      "scope": "built-in-global",
+      "path": "/Users/kouzixuan/.trae-cn/design_libraries/dl_builtin_minimalist",
+      "versionSource": null
+    }
+  }
+}

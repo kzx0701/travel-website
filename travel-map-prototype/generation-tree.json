@@ -1,0 +1,113 @@
+{
+  "root": {
+    "nodeId": "gen-project-shell",
+    "kind": "project-shell",
+    "pageIds": ["page-login", "page-register", "page-map", "page-map-city-detail", "page-map-add-record", "page-statistics", "page-timeline", "page-profile", "page-settings"],
+    "output": "partials/project-shell.html",
+    "sharedRegions": [],
+    "privateRegions": [],
+    "mutableSlots": ["activeNavItem", "pageTitle"],
+    "status": "planned",
+    "children": [
+      {
+        "nodeId": "gen-page-login",
+        "kind": "page-leaf",
+        "pageIds": ["page-login"],
+        "output": "pages/login.html",
+        "sharedRegions": [],
+        "privateRegions": ["login page body"],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-register",
+        "kind": "page-leaf",
+        "pageIds": ["page-register"],
+        "output": "pages/register.html",
+        "sharedRegions": [],
+        "privateRegions": ["register page body"],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-map",
+        "kind": "page-leaf",
+        "pageIds": ["page-map"],
+        "output": "pages/map.html",
+        "sharedRegions": [],
+        "privateRegions": ["map page full layout"],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-map-city-detail",
+        "kind": "page-leaf",
+        "pageIds": ["page-map-city-detail"],
+        "output": "pages/map-city-detail.html",
+        "sharedRegions": [],
+        "privateRegions": ["city detail right panel"],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-map-add-record",
+        "kind": "page-leaf",
+        "pageIds": ["page-map-add-record"],
+        "output": "pages/map-add-record.html",
+        "sharedRegions": [],
+        "privateRegions": ["add record form"],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-statistics",
+        "kind": "page-leaf",
+        "pageIds": ["page-statistics"],
+        "output": "pages/statistics.html",
+        "sharedRegions": [],
+        "privateRegions": ["statistics page body"],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-timeline",
+        "kind": "page-leaf",
+        "pageIds": ["page-timeline"],
+        "output": "pages/timeline.html",
+        "sharedRegions": [],
+        "privateRegions": ["timeline page body"],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-profile",
+        "kind": "page-leaf",
+        "pageIds": ["page-profile"],
+        "output": "pages/profile.html",
+        "sharedRegions": [],
+        "privateRegions": ["profile page body"],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": []
+      },
+      {
+        "nodeId": "gen-page-settings",
+        "kind": "page-leaf",
+        "pageIds": ["page-settings"],
+        "output": "pages/settings.html",
+        "sharedRegions": [],
+        "privateRegions": ["settings page body"],
+        "mutableSlots": [],
+        "status": "planned",
+        "children": []
+      }
+    ]
+  }
+}

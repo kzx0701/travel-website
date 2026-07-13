@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="zh-CN" class="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>统计</title>
+
+<style id="theme-vars">
+/* Source: structured-spec — monochrome minimalist palette (black/white/gray) */
+/* ============================================================
+   PRIMITIVES (theme-independent)
+   ============================================================ */
+:root {
+  --minimal-background: var(--background, #ffffff);
+  --minimal-foreground: var(--foreground, #0f172a);
+  --minimal-card: var(--card, var(--background));
+  --minimal-card-foreground: var(--card-foreground, var(--foreground));
+  --minimal-popover: var(--popover, var(--card));
+  --minimal-popover-foreground: var(--popover-foreground, var(--card-foreground, var(--foreground)));
+  --minimal-primary: var(--primary, #111827);
+  --minimal-primary-foreground: var(--primary-foreground, #ffffff);
+  --minimal-secondary: var(--secondary, var(--muted, var(--card)));
+  --minimal-secondary-foreground: var(--secondary-foreground, var(--foreground));
+  --minimal-muted: var(--muted, var(--card));
+  --minimal-muted-foreground: var(--muted-foreground, var(--foreground));
+  --minimal-accent: var(--accent, var(--secondary, var(--muted, var(--card))));
+  --minimal-accent-foreground: var(--accent-foreground, var(--foreground));
+  --minimal-destructive: var(--destructive, #ef4444);
+  --minimal-destructive-foreground: var(--destructive-foreground, #ffffff);
+  --minimal-border: var(--border, currentColor);
+  --minimal-input: var(--input, var(--border));
+  --minimal-ring: var(--ring, var(--primary));
+  --minimal-chart-1: var(--chart-1, var(--primary));
+  --minimal-chart-2: var(--chart-2, var(--secondary, var(--primary)));
+  --minimal-chart-3: var(--chart-3, var(--accent, var(--primary)));
+  --minimal-chart-4: var(--chart-4, var(--muted-foreground, var(--foreground)));
+  --minimal-chart-5: var(--chart-5, var(--foreground));
+  --minimal-sidebar: var(--sidebar, var(--background));
+  --minimal-sidebar-foreground: var(--sidebar-foreground, var(--foreground));
+  --minimal-sidebar-primary: var(--sidebar-primary, var(--primary));
+  --minimal-sidebar-primary-foreground: var(--sidebar-primary-foreground, var(--primary-foreground));
+  --minimal-sidebar-accent: var(--sidebar-accent, var(--accent, var(--muted, var(--card))));
+  --minimal-sidebar-accent-foreground: var(--sidebar-accent-foreground, var(--accent-foreground, var(--foreground)));
+  --minimal-brand-subtle: var(--brand-subtle, #f4f4f5);
+  --minimal-border-strong: var(--border-strong, #d4d4d8);
+  --minimal-muted: var(--muted, #fafafa);
+
+/* brand — refined cool-neutral identity */
+  --brand-50: #fafafa;
+  --brand-100: #f4f4f5;
+  --brand-200: #e4e4e7;
+  --brand-300: #d4d4d8;
+  --brand-400: #a1a1aa;
+  --brand-500: #71717a;
+  --brand-600: #52525b;
+  --brand-700: #3f3f46;
+  --brand-800: #27272a;
+  --brand-900: #18181b;
+
+  --background: #ffffff;
+  --card: #ffffff;
+  --muted: #fafafa;
+  --foreground: #18181b;
+  --primary: #111827;
+  --primary-foreground: #ffffff;
+  --secondary: #f4f4f5;
+  --muted-foreground: #71717a;
+  --border: #e4e4e7;
+  --border-strong: #d4d4d8;
+  --input: #e4e4e7;
+  --ring: #111827;
+
+  --chart-1: #e4e4e7;
+  --chart-2: #a1a1aa;
+  --chart-3: #52525b;
+  --chart-4: #27272a;
+  --chart-5: #18181b;
+
+  --font-sans: Geist, ui-sans-serif, sans-serif, system-ui;
+  --font-serif: DM Serif Display, ui-serif, serif;
+  --font-mono: Geist Mono, ui-monospace, monospace;
+  --tracking-normal: 0em;
+  --tracking-tight: -0.012em;
+  --radius: 0.75rem;
+  --radius-sm: 0.375rem;
+  --radius-lg: 1rem;
+  --shadow-xs: 0 1px 1px 0 rgba(0, 0, 0, 0.04);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05), 0 1px 1px 0 rgba(0, 0, 0, 0.03);
+  --spacing: 0.25rem;
+  --space-4: var(--spacing);
+}
+</style>
+
+<style type="text/tailwindcss">
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--secondary);
+  --color-accent-foreground: var(--foreground);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-destructive: #ef4444;
+  --color-destructive-foreground: #ffffff;
+  --color-brand-subtle: var(--brand-100);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+}
+
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    background-color: var(--background);
+    color: var(--foreground);
+    -webkit-font-smoothing: antialiased;
+    letter-spacing: var(--tracking-normal);
+  }
+}
+
+[data-icon] {
+  display: inline-block;
+  width: 1em;
+  height: 1em;
+  vertical-align: middle;
+  -webkit-mask-size: contain;
+  mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+  mask-position: center;
+  background-color: currentColor;
+}
+</style>
+
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/lucide@1.7.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4"></script>
+
+</head>
+<body class="min-h-screen">
+
+<!-- TOP NAVBAR -->
+<nav class="w-full border-b" style="border-color: var(--border); background-color: var(--background);">
+  <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
+    <!-- Left: Logo -->
+    <a href="#" class="flex items-center gap-2 no-underline" style="color: var(--foreground);">
+      <i data-lucide="map-pin" class="w-4 h-4" style="color: var(--foreground);"></i>
+      <span class="text-sm font-semibold tracking-tight whitespace-nowrap">足迹地图</span>
+    </a>
+
+    <!-- Center: Tabs -->
+    <div class="flex items-center gap-1">
+      <a href="#" data-dom-id="nav-map-hidden" class="px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors duration-150" style="color: var(--muted-foreground);">地图</a>
+      <a href="#" data-dom-id="nav-statistics" class="px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors duration-150" style="background-color: var(--primary); color: var(--primary-foreground);">统计</a>
+      <a href="#" data-dom-id="nav-timeline" class="px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors duration-150" style="color: var(--muted-foreground);">时间线</a>
+      <a href="#" data-dom-id="nav-profile-hidden" class="px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors duration-150" style="color: var(--muted-foreground);">个人主页</a>
+      <a href="#" data-dom-id="nav-settings-hidden" class="px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors duration-150" style="color: var(--muted-foreground);">设置</a>
+    </div>
+
+    <!-- Right: User -->
+    <div class="flex items-center gap-3">
+      <div class="w-7 h-7 rounded-full flex items-center justify-center text-xs font-semibold" style="background-color: var(--primary); color: var(--primary-foreground);">L</div>
+      <span class="text-xs" style="color: var(--muted-foreground);">lucy@example.com</span>
+    </div>
+  </div>
+</nav>
+
+<main class="max-w-5xl mx-auto px-6 py-8">
+
+  <!-- Time Filter Bar -->
+  <div class="flex items-center gap-2 mb-8">
+    <button class="px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors duration-150" style="background-color: var(--primary); color: var(--primary-foreground);">全部</button>
+    <button class="px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors duration-150" style="border: 1px solid var(--border); color: var(--muted-foreground); background-color: var(--background);">今年</button>
+    <button class="px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors duration-150" style="border: 1px solid var(--border); color: var(--muted-foreground); background-color: var(--background);">最近一年</button>
+    <button class="px-3 py-1.5 text-xs font-medium rounded-md whitespace-nowrap transition-colors duration-150" style="border: 1px solid var(--border); color: var(--muted-foreground); background-color: var(--background);">自定义</button>
+  </div>
+
+  <!-- Stats Cards Row -->
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-0 rounded-xl overflow-hidden mb-8" style="border: 1px solid var(--border); background-color: var(--card);">
+    <!-- Card 1 -->
+    <div class="p-6 flex flex-col gap-2 min-h-[120px] transition-colors duration-150" style="border-right: 1px solid var(--border);">
+      <span class="text-xs font-medium uppercase tracking-wide" style="color: var(--muted-foreground);">已点亮城市</span>
+      <span class="text-4xl font-semibold tracking-tight" style="font-family: var(--font-serif); font-variant-numeric: tabular-nums;">28</span>
+      <span class="text-xs" style="color: var(--muted-foreground);">覆盖全国 8.2%</span>
+    </div>
+    <!-- Card 2 -->
+    <div class="p-6 flex flex-col gap-2 min-h-[120px] transition-colors duration-150" style="border-right: 1px solid var(--border);">
+      <span class="text-xs font-medium uppercase tracking-wide" style="color: var(--muted-foreground);">覆盖省份</span>
+      <span class="text-4xl font-semibold tracking-tight" style="font-family: var(--font-serif); font-variant-numeric: tabular-nums;">12</span>
+      <span class="text-xs" style="color: var(--muted-foreground);">覆盖全国 39.3%</span>
+    </div>
+    <!-- Card 3 -->
+    <div class="p-6 flex flex-col gap-2 min-h-[120px] transition-colors duration-150">
+      <span class="text-xs font-medium uppercase tracking-wide" style="color: var(--muted-foreground);">总出行次数</span>
+      <span class="text-4xl font-semibold tracking-tight" style="font-family: var(--font-serif); font-variant-numeric: tabular-nums;">45</span>
+      <span class="text-xs" style="color: var(--muted-foreground);">平均每城 1.6 次</span>
+    </div>
+  </div>
+
+  <!-- Second Row: Chart + Map -->
+  <div class="grid grid-cols-1 lg:grid-cols-5 gap-6 mb-8">
+    <!-- LEFT: Donut Chart -->
+    <div class="lg:col-span-3 rounded-xl p-6 flex flex-col" style="border: 1px solid var(--border); background-color: var(--card);">
+      <div class="flex items-center justify-between mb-6">
+        <h2 class="text-sm font-semibold tracking-tight" style="color: var(--foreground);">出行目的分布</h2>
+      </div>
+      <div class="flex-1 flex items-center justify-center gap-8 min-h-[240px]">
+        <div class="relative" style="width: 180px; height: 180px;">
+          <canvas id="donutChart" width="180" height="180"></canvas>
+        </div>
+        <div class="flex flex-col gap-3">
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full shrink-0" style="background-color: #FF6B35;"></span>
+            <span class="text-xs" style="color: var(--foreground);">旅游</span>
+            <span class="text-xs font-medium ml-auto whitespace-nowrap" style="font-family: var(--font-mono); color: var(--muted-foreground);">45%</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full shrink-0" style="background-color: #3B82F6;"></span>
+            <span class="text-xs" style="color: var(--foreground);">出差</span>
+            <span class="text-xs font-medium ml-auto whitespace-nowrap" style="font-family: var(--font-mono); color: var(--muted-foreground);">25%</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full shrink-0" style="background-color: #18181b;"></span>
+            <span class="text-xs" style="color: var(--foreground);">探亲</span>
+            <span class="text-xs font-medium ml-auto whitespace-nowrap" style="font-family: var(--font-mono); color: var(--muted-foreground);">15%</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full shrink-0" style="background-color: #a1a1aa;"></span>
+            <span class="text-xs" style="color: var(--foreground);">工作学习</span>
+            <span class="text-xs font-medium ml-auto whitespace-nowrap" style="font-family: var(--font-mono); color: var(--muted-foreground);">10%</span>
+          </div>
+          <div class="flex items-center gap-2">
+            <span class="w-3 h-3 rounded-full shrink-0" style="background-color: #e4e4e7;"></span>
+            <span class="text-xs" style="color: var(--foreground);">中转</span>
+            <span class="text-xs font-medium ml-auto whitespace-nowrap" style="font-family: var(--font-mono); color: var(--muted-foreground);">5%</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Mini Map -->
+    <div class="lg:col-span-2 rounded-xl p-6 flex flex-col" style="border: 1px solid var(--border); background-color: var(--card);">
+      <h2 class="text-sm font-semibold tracking-tight mb-4" style="color: var(--foreground);">点亮地图</h2>
+      <div class="flex-1 rounded-lg overflow-hidden relative flex items-center justify-center" style="background-color: var(--muted); min-height: 200px;">
+        <!-- Simplified China map placeholder with lit dots -->
+        <svg viewBox="0 0 300 220" width="100%" height="100%" style="max-height: 200px;">
+          <!-- Unlit province shapes (simplified) -->
+          <rect x="100" y="20" width="80" height="50" rx="4" fill="#e4e4e7" opacity="0.5"/>
+          <rect x="80" y="70" width="100" height="40" rx="4" fill="#e4e4e7" opacity="0.4"/>
+          <rect x="60" y="110" width="120" height="50" rx="4" fill="#e4e4e7" opacity="0.35"/>
+          <rect x="120" y="40" width="80" height="60" rx="4" fill="#e4e4e7" opacity="0.3"/>
+          <rect x="140" y="100" width="60" height="50" rx="4" fill="#e4e4e7" opacity="0.25"/>
+          <rect x="200" y="60" width="60" height="70" rx="4" fill="#e4e4e7" opacity="0.3"/>
+          <rect x="180" y="130" width="70" height="50" rx="4" fill="#e4e4e7" opacity="0.25"/>
+          <rect x="50" y="50" width="50" height="40" rx="4" fill="#e4e4e7" opacity="0.3"/>
+          <rect x="90" y="90" width="60" height="50" rx="4" fill="#e4e4e7" opacity="0.35"/>
+          <rect x="160" y="160" width="80" height="40" rx="4" fill="#e4e4e7" opacity="0.2"/>
+
+          <!-- Lit city dots (warm orange) -->
+          <circle cx="140" cy="55" r="4" fill="#FF6B35"/>
+          <circle cx="160" cy="80" r="3.5" fill="#FF6B35"/>
+          <circle cx="125" cy="95" r="4" fill="#FF6B35"/>
+          <circle cx="180" cy="100" r="3" fill="#FF6B35"/>
+          <circle cx="100" cy="115" r="3.5" fill="#FF6B35"/>
+          <circle cx="150" cy="120" r="3" fill="#FF6B35"/>
+          <circle cx="220" cy="85" r="4" fill="#FF6B35"/>
+          <circle cx="190" cy="140" r="3" fill="#FF6B35"/>
+          <circle cx="80" cy="75" r="3" fill="#FF6B35"/>
+          <circle cx="170" cy="60" r="3" fill="#FF6B35"/>
+
+          <!-- Residence dot (blue) -->
+          <circle cx="155" cy="85" r="4.5" fill="#3B82F6" opacity="0.8"/>
+        </svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Third Row: Recent Trips -->
+  <div>
+    <h2 class="text-sm font-semibold tracking-tight mb-4" style="color: var(--foreground);">近期行程</h2>
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <!-- Trip Card 1 -->
+      <div class="rounded-xl p-5 flex flex-col gap-3 transition-colors duration-150" style="border: 1px solid var(--border); background-color: var(--card);">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-semibold tracking-tight truncate" style="color: var(--foreground);">江浙沪春游</h3>
+          <span class="text-xs whitespace-nowrap shrink-0" style="color: var(--muted-foreground);">2024-03-15 ~ 2024-03-20</span>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="map-pin" class="w-3.5 h-3.5" style="color: var(--muted-foreground);"></i>
+            <span class="text-xs" style="color: var(--muted-foreground);">3 城</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="file-text" class="w-3.5 h-3.5" style="color: var(--muted-foreground);"></i>
+            <span class="text-xs" style="color: var(--muted-foreground);">5 次记录</span>
+          </div>
+        </div>
+      </div>
+      <!-- Trip Card 2 -->
+      <div class="rounded-xl p-5 flex flex-col gap-3 transition-colors duration-150" style="border: 1px solid var(--border); background-color: var(--card);">
+        <div class="flex items-center justify-between">
+          <h3 class="text-sm font-semibold tracking-tight truncate" style="color: var(--foreground);">成都出差</h3>
+          <span class="text-xs whitespace-nowrap shrink-0" style="color: var(--muted-foreground);">2024-06-18 ~ 2024-06-22</span>
+        </div>
+        <div class="flex items-center gap-4">
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="map-pin" class="w-3.5 h-3.5" style="color: var(--muted-foreground);"></i>
+            <span class="text-xs" style="color: var(--muted-foreground);">2 城</span>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <i data-lucide="file-text" class="w-3.5 h-3.5" style="color: var(--muted-foreground);"></i>
+            <span class="text-xs" style="color: var(--muted-foreground);">3 次记录</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// Donut Chart via Chart.js
+(function() {
+  var ctx = document.getElementById('donutChart').getContext('2d');
+  new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: ['旅游', '出差', '探亲', '工作学习', '中转'],
+      datasets: [{
+        data: [45, 25, 15, 10, 5],
+        backgroundColor: ['#FF6B35', '#3B82F6', '#18181b', '#a1a1aa', '#e4e4e7'],
+        borderWidth: 0,
+        hoverOffset: 4
+      }]
+    },
+    options: {
+      responsive: false,
+      cutout: '65%',
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: '#18181b',
+          titleFont: { family: 'Geist, sans-serif', size: 12 },
+          bodyFont: { family: 'Geist, sans-serif', size: 12 },
+          cornerRadius: 6,
+          padding: 8,
+          callbacks: {
+            label: function(context) {
+              return context.label + ' ' + context.parsed + '%';
+            }
+          }
+        }
+      },
+      animation: {
+        animateRotate: true,
+        duration: 800
+      }
+    }
+  });
+})();
+</script>
+
+<script>lucide.createIcons();</script>
+
+</body>
+</html>
