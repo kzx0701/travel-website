@@ -3,7 +3,7 @@ import { computed, ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
 import type { City, MapLevel } from '@/types'
 import { useMapChart, type UseMapChartCallbacks } from '@/composables/useMapChart'
-import { provinces } from '@/data/cities'
+import { provinces, getCityByCode } from '@/data/cities'
 
 /**
  * BaseMap - 统一渲染 API 的三级地图组件
@@ -76,17 +76,31 @@ const callbacks = computed<UseMapChartCallbacks>(() => ({
 const {
   loading,
   mapAvailable,
+  currentZoom,
   zoomIn,
   zoomOut,
-  renderChart,
   updateData,
+  focusProvince,
+  unfocus,
 } = useMapChart(containerRef, chartParams, callbacks)
 
-// 层级或区域编码变化 → 重新注册并渲染地图
+// 层级或区域编码变化 → 聚焦/取消聚焦（不再重新加载地图，始终用全国地图）
 watch(
-  () => [props.level, props.regionCode],
-  () => {
-    renderChart()
+  () => [props.level, props.regionCode] as const,
+  ([level, regionCode]) => {
+    if (level === 'country') {
+      unfocus()
+    } else if (level === 'province' && regionCode) {
+      focusProvince(regionCode)
+    } else if (level === 'city' && regionCode) {
+      const city = getCityByCode(regionCode)
+      if (city) {
+        focusProvince(city.provinceCode, {
+          center: [city.longitude, city.latitude],
+          zoom: 6,
+        })
+      }
+    }
   },
 )
 
@@ -101,18 +115,18 @@ watch(
 </script>
 
 <template>
-  <div class="base-map relative h-full w-full overflow-hidden bg-white">
+  <div class="base-map relative h-full w-full overflow-hidden">
     <!-- 地图容器 -->
     <div ref="containerRef" class="absolute inset-0" />
 
     <!-- 加载骨架屏遮罩 -->
     <div
       v-if="loading"
-      class="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-sm"
+      class="absolute inset-0 z-10 flex items-center justify-center bg-zinc-50/80 backdrop-blur-sm"
     >
       <div class="flex flex-col items-center gap-3 text-primary">
         <div class="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        <span class="text-sm text-gray-500">地图加载中…</span>
+        <span class="text-sm text-zinc-500">地图加载中…</span>
       </div>
     </div>
 
@@ -125,52 +139,66 @@ watch(
       <code class="font-mono text-amber-800">src/data/README_DATA.md</code> 下载地图数据。
     </div>
 
-    <!-- 缩放控制按钮组 -->
+    <!-- 缩放控制按钮组（左下角，含比例百分比） -->
     <div
       v-if="!readonly"
-      class="absolute right-3 top-3 z-10 flex flex-col gap-1.5 rounded-md bg-white/90 p-0.5 shadow-sm ring-1 ring-gray-200"
+      class="absolute bottom-3 left-3 z-10 flex items-center gap-1 rounded-lg bg-white/80 p-1 shadow-sm ring-1 ring-zinc-200/60 backdrop-blur-md"
     >
       <Button
         variant="ghost"
         size="icon-sm"
-        class="size-8 rounded text-lg text-gray-600 hover:text-primary"
-        title="放大"
-        @click="zoomIn"
-      >
-        +
-      </Button>
-      <div class="mx-1 h-px bg-gray-200" />
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        class="size-8 rounded text-lg text-gray-600 hover:text-primary"
+        class="size-7 rounded-md text-base text-zinc-600 hover:bg-zinc-100 hover:text-primary"
         title="缩小"
         @click="zoomOut"
       >
         −
       </Button>
+      <span class="min-w-[3rem] text-center text-xs font-medium tabular-nums text-zinc-600">
+        {{ Math.round(currentZoom * 100) }}%
+      </span>
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        class="size-7 rounded-md text-base text-zinc-600 hover:bg-zinc-100 hover:text-primary"
+        title="放大"
+        @click="zoomIn"
+      >
+        +
+      </Button>
     </div>
 
     <!-- 图例 -->
     <div
-      class="pointer-events-none absolute bottom-3 right-3 z-10 flex flex-col gap-1 rounded-md bg-white/90 px-3 py-2 text-xs text-gray-600 shadow-sm ring-1 ring-gray-200"
+      class="pointer-events-none absolute bottom-3 right-3 z-10 flex flex-col gap-1.5 rounded-lg bg-white/80 px-3.5 py-2.5 text-xs text-zinc-600 shadow-sm ring-1 ring-zinc-200/60 backdrop-blur-md"
     >
+      <div class="mb-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-400">
+        图例
+      </div>
       <div class="flex items-center gap-2">
-        <span class="inline-block h-3 w-3 rounded-full" style="background-color: #FFB380" />
+        <span
+          class="inline-block h-2.5 w-2.5 rounded-full"
+          style="background-color: #FFB380; box-shadow: 0 0 0 3px rgba(255, 179, 128, 0.15);"
+        />
         <span>到达 1 次</span>
       </div>
       <div class="flex items-center gap-2">
-        <span class="inline-block h-3 w-3 rounded-full" style="background-color: #FF6B35" />
+        <span
+          class="inline-block h-2.5 w-2.5 rounded-full"
+          style="background-color: #FF6B35; box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.18);"
+        />
         <span>到达 2-3 次</span>
       </div>
       <div class="flex items-center gap-2">
-        <span class="inline-block h-3 w-3 rounded-full" style="background-color: #E05A20" />
+        <span
+          class="inline-block h-2.5 w-2.5 rounded-full"
+          style="background-color: #E05A20; box-shadow: 0 0 0 3px rgba(224, 90, 32, 0.2);"
+        />
         <span>到达 4+ 次</span>
       </div>
       <div class="flex items-center gap-2">
         <span
-          class="inline-block h-3 w-3 rounded-full"
-          style="background-color: #3B82F6; box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.3)"
+          class="inline-block h-2.5 w-2.5 rounded-full"
+          style="background-color: #3B82F6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);"
         />
         <span>居住地</span>
       </div>

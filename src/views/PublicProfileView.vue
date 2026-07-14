@@ -108,7 +108,7 @@ onMounted(async () => {
       >
         <MapPin class="h-6 w-6 text-warm" />
         <span class="text-base font-bold tracking-tight text-slate-800">
-          足迹地图
+          足记
         </span>
       </router-link>
       <Button as-child size="sm">
@@ -170,7 +170,7 @@ onMounted(async () => {
                 <h2 class="truncate font-serif text-xl text-slate-800">
                   {{ profile.displayName }}
                 </h2>
-                <p class="mt-1 text-xs text-slate-400">的足迹地图</p>
+                <p class="mt-1 text-xs text-slate-400">的足记</p>
               </div>
 
               <!-- 统计概览 -->

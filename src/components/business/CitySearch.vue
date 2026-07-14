@@ -3,6 +3,7 @@ import { ref, computed, watch, onMounted, onBeforeUnmount } from 'vue'
 import { Search } from '@lucide/vue'
 import { useDebounce } from '@/composables/useDebounce'
 import { searchCities } from '@/composables/useCitySearch'
+import { Input } from '@/components/ui/input'
 import type { City } from '@/types'
 
 interface Props {
@@ -73,16 +74,16 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
     <!-- 搜索输入框 -->
     <div class="relative">
       <Search
-        class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none"
+        class="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground pointer-events-none z-10"
       />
-      <input
+      <Input
         v-model="keyword"
         type="text"
         :placeholder="placeholder"
         :disabled="disabled"
-        class="w-full h-10 pl-9 pr-3 bg-background border border-input rounded-lg text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-ring focus:ring-2 focus:ring-ring/20 transition-colors disabled:bg-muted disabled:text-muted-foreground disabled:cursor-not-allowed"
+        class="h-10 pl-9"
         @keydown="handleKeydown"
-      >
+      />
     </div>
 
     <!-- 下拉面板 -->
@@ -96,16 +97,16 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
     >
       <div
         v-if="showDropdown"
-        class="absolute left-0 right-0 mt-1.5 bg-white border border-slate-200 rounded-lg shadow-lg shadow-slate-200/60 overflow-hidden z-50"
+        class="absolute left-0 right-0 mt-1.5 rounded-xl border border-border bg-popover shadow-md overflow-hidden z-50"
       >
         <!-- 搜索中 -->
-        <div v-if="isSearching" class="px-4 py-3 text-sm text-slate-400">
+        <div v-if="isSearching" class="px-4 py-3 text-sm text-muted-foreground">
           搜索中...
         </div>
         <!-- 无结果 -->
         <div
           v-else-if="results.length === 0"
-          class="px-4 py-3 text-sm text-slate-400 text-center"
+          class="px-4 py-3 text-sm text-muted-foreground text-center"
         >
           未找到城市
         </div>
@@ -114,13 +115,13 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
           <li
             v-for="(city, index) in results"
             :key="city.code"
-            class="flex items-baseline justify-between px-4 py-2.5 cursor-pointer transition-colors"
-            :class="index === activeIndex ? 'bg-slate-50' : 'hover:bg-slate-50'"
+            class="flex items-baseline justify-between px-3 py-2 cursor-pointer transition-colors"
+            :class="index === activeIndex ? 'bg-accent' : 'hover:bg-accent'"
             @click="selectCity(city)"
             @mouseenter="activeIndex = index"
           >
-            <span class="text-sm font-medium text-slate-800">{{ city.name }}</span>
-            <span class="text-xs text-slate-400 ml-2">{{ city.provinceName }}</span>
+            <span class="text-sm font-medium text-foreground">{{ city.name }}</span>
+            <span class="text-xs text-muted-foreground ml-2">{{ city.provinceName }}</span>
           </li>
         </ul>
       </div>

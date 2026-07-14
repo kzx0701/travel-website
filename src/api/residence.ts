@@ -83,6 +83,7 @@ export async function saveResidence(data: ResidenceInput): Promise<Residence> {
 export async function updateResidence(
   data: Partial<ResidenceInput>,
 ): Promise<Residence> {
+  const userId = await getCurrentUserId()
   const update: Record<string, string> = {}
   if (data.provinceCode !== undefined) update.province_code = data.provinceCode
   if (data.cityCode !== undefined) update.city_code = data.cityCode
@@ -94,6 +95,7 @@ export async function updateResidence(
   const { data: row, error } = await supabase
     .from('residences')
     .update(update)
+    .eq('user_id', userId)
     .select('*')
     .single()
   if (error) throw new Error(error.message)

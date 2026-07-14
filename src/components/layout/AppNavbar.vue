@@ -2,6 +2,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 import { ChevronDown, LogOut, MapPin } from '@lucide/vue'
+import logoDark from '@/assets/images/logo_dark.png'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -62,11 +63,13 @@ async function handleLogout(): Promise<void> {
   >
     <!-- 左：Logo + 标题 -->
     <div class="flex shrink-0 items-center gap-2">
-      <span class="flex h-7 w-7 items-center justify-center">
-        <MapPin class="h-6 w-6 text-warm" />
-      </span>
+      <img
+        :src="logoDark"
+        alt="足记"
+        class="h-7 w-7 object-contain"
+      />
       <span class="hidden text-base font-bold tracking-tight text-slate-800 sm:inline">
-        足迹地图
+        足记
       </span>
     </div>
 

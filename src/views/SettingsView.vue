@@ -29,7 +29,7 @@ import type { Residence, PurposeCategory } from '@/types'
  *
  * Task 13：三分区设置
  * 1. 居住地设置：ResidenceSelector（区县级）
- * 2. 账号信息：邮箱 / 显示名（可编辑）/ 头像预览（DiceBear）/ 退出登录
+ * 2. 账号信息：邮箱 / 显示名（可编辑）/ 头像预览（DiceBear）
  * 3. 偏好设置：出行目的分类管理 + 个人主页可见性（公开开关 / 分享链接）
  *
  * AppNavbar + 居中内容区，卡片式分区，加载骨架屏。
@@ -44,7 +44,12 @@ const visitRecordStore = useVisitRecordStore()
 onMounted(async () => {
   // 居住地（若尚未加载则拉取）
   if (!residenceStore.residence && !residenceStore.loading) {
-    residenceStore.load()
+    try {
+      await residenceStore.load()
+    } catch (e) {
+      toast.error('居住地加载失败')
+      console.error(e)
+    }
   }
   // 出行目的分类
   if (purposeStore.categories.length === 0) {
@@ -117,6 +122,7 @@ async function handleSaveDisplayName(): Promise<void> {
 async function handleLogout(): Promise<void> {
   try {
     await authStore.logout()
+    toast.success('已退出登录')
   } catch (e) {
     toast.error('退出失败')
     console.error(e)
@@ -373,13 +379,6 @@ async function handleCopyLink(): Promise<void> {
               </div>
             </div>
 
-            <!-- 退出登录 -->
-            <div class="border-t border-slate-100 pt-4">
-              <Button variant="outline" @click="handleLogout">
-                <LogOut class="h-4 w-4" />
-                退出登录
-              </Button>
-            </div>
           </div>
         </section>
 
@@ -542,6 +541,14 @@ async function handleCopyLink(): Promise<void> {
             </div>
           </div>
         </section>
+
+        <!-- ============ 退出登录 ============ -->
+        <div class="mt-8 pb-4">
+          <Button variant="destructive" class="w-full" @click="handleLogout">
+            <LogOut class="h-4 w-4" />
+            退出登录
+          </Button>
+        </div>
       </div>
     </main>
 

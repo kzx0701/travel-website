@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { toast } from 'vue-sonner'
+import { toast } from 'vue-sonner'
 import { Plus, Check, ChevronsUpDown, CircleMinus } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import {
@@ -47,8 +48,8 @@ onMounted(async () => {
     try {
       await tripStore.loadAll()
     } catch (e) {
-      // 行程加载失败不阻塞选择器使用
-      console.error('行程加载失败', e)
+      toast.error('行程加载失败')
+      console.error(e)
     }
   }
 })

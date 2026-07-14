@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
 import { DatePicker } from '@/components/ui/date-picker'
+import { toast } from 'vue-sonner'
 import { useVisitRecordStore } from '@/stores/visitRecord'
 import { useTripStore } from '@/stores/trip'
 import { cityMap } from '@/data/cities'
@@ -117,7 +118,12 @@ const hasAnyRecords = computed(() => visitRecordStore.records.length > 0)
 const hasFilteredData = computed(() => filteredRecords.value.length > 0)
 
 onMounted(async () => {
-  await Promise.all([visitRecordStore.loadAll(), tripStore.loadAll()])
+  try {
+    await Promise.all([visitRecordStore.loadAll(), tripStore.loadAll()])
+  } catch (e) {
+    toast.error('统计数据加载失败，请刷新重试')
+    console.error(e)
+  }
 })
 </script>
 

@@ -43,6 +43,7 @@ const { handleSubmit } = useForm({
 const onSubmit = handleSubmit(async (values) => {
   try {
     await authStore.login(values.email, values.password)
+    toast.success('登录成功')
     const redirect = (route.query.redirect as string) || '/'
     router.push(redirect)
   } catch (e) {

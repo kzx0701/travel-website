@@ -19,6 +19,21 @@ export interface GeoJSON {
 }
 
 /**
+ * 省份边界框（经纬度范围）
+ */
+export interface ProvinceBBox {
+  minLng: number
+  maxLng: number
+  minLat: number
+  maxLat: number
+}
+
+/**
+ * 省份名称 → 边界框的缓存（从 china.json 解析）
+ */
+const provinceBBoxes = new Map<string, ProvinceBBox>()
+
+/**
  * Vite 静态扫描 src/data/geo/ 下的所有 .json 文件
  * 文件不存在时该 glob 为空对象，loader 返回 null 不会报错
  *
@@ -109,6 +124,12 @@ export async function registerMapForLevel(
   try {
     echarts.registerMap(mapName, geo as unknown as Parameters<typeof echarts.registerMap>[1])
     registeredMaps.add(mapName)
+
+    // 全国地图加载后解析省份边界框（供自适应缩放计算用）
+    if (level === 'country' && provinceBBoxes.size === 0) {
+      parseProvinceBBoxes(geo)
+    }
+
     return mapName
   } catch (err) {
     console.warn(`[mapGeoLoader] 地图注册失败: ${mapName}`, err)
@@ -121,4 +142,68 @@ export async function registerMapForLevel(
  */
 export function clearRegisteredMaps(): void {
   registeredMaps.clear()
+  provinceBBoxes.clear()
+}
+
+/**
+ * 从 GeoJSON feature 中提取边界框（经纬度范围）
+ * 支持 Polygon 和 MultiPolygon 类型
+ */
+function extractBBox(feature: GeoJSONFeature): ProvinceBBox | null {
+  const coords = feature.geometry.coordinates
+  if (!coords) return null
+
+  let minLng = Infinity
+  let maxLng = -Infinity
+  let minLat = Infinity
+  let maxLat = -Infinity
+
+  function processRing(ring: number[][]) {
+    for (const point of ring) {
+      const [lng, lat] = point
+      if (typeof lng !== 'number' || typeof lat !== 'number') continue
+      if (lng < minLng) minLng = lng
+      if (lng > maxLng) maxLng = lng
+      if (lat < minLat) minLat = lat
+      if (lat > maxLat) maxLat = lat
+    }
+  }
+
+  if (feature.geometry.type === 'Polygon') {
+    for (const ring of coords as number[][][]) {
+      processRing(ring)
+    }
+  } else if (feature.geometry.type === 'MultiPolygon') {
+    for (const polygon of coords as number[][][][]) {
+      for (const ring of polygon) {
+        processRing(ring)
+      }
+    }
+  }
+
+  if (minLng === Infinity) return null
+  return { minLng, maxLng, minLat, maxLat }
+}
+
+/**
+ * 从 china.json 中解析所有省份的边界框并缓存
+ */
+function parseProvinceBBoxes(geo: GeoJSON): void {
+  for (const feature of geo.features) {
+    const name = feature.properties?.name as string | undefined
+    if (!name) continue
+    const bbox = extractBBox(feature)
+    if (bbox) {
+      provinceBBoxes.set(name, bbox)
+    }
+  }
+}
+
+/**
+ * 获取省份边界框（从 china.json 解析）
+ * @param provinceName 省份名称（如 '广东省'）
+ * @returns 边界框，未找到时返回 null
+ */
+export function getProvinceBBox(provinceName: string): ProvinceBBox | null {
+  return provinceBBoxes.get(provinceName) ?? null
 }

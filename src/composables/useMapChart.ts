@@ -1,7 +1,8 @@
 import { onBeforeUnmount, onMounted, ref, shallowRef, type Ref } from 'vue'
 import * as echarts from 'echarts'
 import type { City, MapLevel } from '@/types'
-import { registerMapForLevel, getMapName } from '@/utils/mapGeoLoader'
+import { provinces, getProvinceCenter, getCityByCode } from '@/data/cities'
+import { registerMapForLevel, getProvinceBBox } from '@/utils/mapGeoLoader'
 import {
   MAP_COLORS,
   TIER_COLORS,
@@ -41,15 +42,6 @@ interface ScatterDataItem {
 }
 
 /**
- * 全国级各省色块数据项
- */
-interface ProvinceRegionItem {
-  name: string
-  value: number
-  provinceCode: string
-}
-
-/**
  * 事件回调签名
  */
 export interface UseMapChartCallbacks {
@@ -70,8 +62,27 @@ export function useMapChart(
   const loading = ref(false)
   const mapAvailable = ref(true)
   const currentZoom = ref(1)
+  const flying = ref(false)
+  const focusedProvinceCode = ref<string | null>(null)
+  let flyTimer: ReturnType<typeof setTimeout> | null = null
+  // regions 渐变动画定时器（分帧逐步调整 opacity 实现柔和过渡）
+  let regionsAnimTimer: ReturnType<typeof setInterval> | null = null
+  // 非聚焦省份的暗化目标值（1 = 正常，DIM_OPACITY = 完全暗化）
+  const DIM_OPACITY = 0.25
+  // regions 渐变动画时长
+  const REGIONS_FADE_DURATION = 350
 
   let resizeObserver: ResizeObserver | null = null
+
+  /**
+   * 清理 regions 渐变动画
+   */
+  function clearRegionsAnim(): void {
+    if (regionsAnimTimer) {
+      clearInterval(regionsAnimTimer)
+      regionsAnimTimer = null
+    }
+  }
 
   /**
    * 构建 scatter 点位数据
@@ -123,31 +134,131 @@ export function useMapChart(
   }
 
   /**
-   * 构建全国级各省色块数据（按已点亮城市数加权）
+   * 构建 geo.regions（所有省份，带聚焦感知样式）
+   * @param dimOpacity 非聚焦省份的 opacity（1 = 正常，DIM_OPACITY = 完全暗化）
+   *                   用于渐变动画中插值，默认 DIM_OPACITY
    */
-  function buildProvinceRegions(): ProvinceRegionItem[] {
+  function buildGeoRegions(dimOpacity: number = DIM_OPACITY) {
     const { litCities } = params.value
     const countByProvince = new Map<string, number>()
     litCities.forEach((c) => {
       countByProvince.set(c.provinceCode, (countByProvince.get(c.provinceCode) ?? 0) + 1)
     })
-    // name 用省份名（与 GeoJSON properties.name 匹配，去掉"省/市/自治区"后缀以提升匹配率）
-    const provinceNameMap = new Map<string, { name: string; code: string }>()
-    // 直接复用 litCities 中 provinceName
-    litCities.forEach((c) => {
-      if (!provinceNameMap.has(c.provinceCode)) {
-        provinceNameMap.set(c.provinceCode, { name: c.provinceName, code: c.provinceCode })
+
+    const focusedCode = focusedProvinceCode.value
+    const focusedName = focusedCode
+      ? provinces.find((p) => p.code === focusedCode)?.name
+      : null
+
+    return provinces.map((p) => {
+      const visitCount = countByProvince.get(p.code) ?? 0
+      const isFocused = focusedName === p.name
+
+      // 有聚焦省份且当前不是聚焦省份 → 暗化
+      if (focusedName && !isFocused) {
+        return {
+          name: p.name,
+          itemStyle: {
+            areaColor: MAP_COLORS.unlit,
+            opacity: dimOpacity,
+            borderColor: MAP_COLORS.borderColor,
+            borderWidth: 0.5,
+          },
+        }
+      }
+      // 聚焦省份 → 高亮边框 + 柔和发光
+      if (isFocused) {
+        return {
+          name: p.name,
+          itemStyle: {
+            areaColor: visitCount > 0 ? MAP_COLORS.litFill : MAP_COLORS.unlit,
+            borderColor: MAP_COLORS.focusBorder,
+            borderWidth: 1.5,
+            shadowColor: 'rgba(255, 107, 53, 0.25)',
+            shadowBlur: 12,
+            opacity: 1,
+          },
+        }
+      }
+      // 无聚焦 → 正常样式（已点亮省份用暖色，未点亮用暖灰白）
+      return {
+        name: p.name,
+        itemStyle: {
+          areaColor: visitCount > 0 ? MAP_COLORS.litFill : MAP_COLORS.unlit,
+          borderColor: MAP_COLORS.borderColor,
+          borderWidth: 0.8,
+          shadowColor: MAP_COLORS.shadowColor,
+          shadowBlur: 6,
+          opacity: 1,
+        },
       }
     })
-    const items: ProvinceRegionItem[] = []
-    provinceNameMap.forEach(({ name, code }) => {
-      items.push({
-        name,
-        value: countByProvince.get(code) ?? 0,
-        provinceCode: code,
-      })
-    })
-    return items
+  }
+
+  /**
+   * 计算省份聚焦的自适应 center 和 zoom
+   * 利用 GeoJSON 边界框 + ECharts convertToPixel 测量省份在 zoom=1 时的像素尺寸，
+   * 根据容器大小计算最佳缩放，使省份在面板中最大化完整展示并居中
+   *
+   * @param provinceCode 省份编码
+   * @returns { center, zoom } 或 null（计算失败时）
+   */
+  function calculateAdaptiveFocus(provinceCode: string): {
+    center: [number, number]
+    zoom: number
+  } | null {
+    if (!chart.value || !containerRef.value) return null
+
+    const province = provinces.find((p) => p.code === provinceCode)
+    if (!province) return null
+
+    const bbox = getProvinceBBox(province.name)
+    if (!bbox) return null
+
+    const container = containerRef.value
+    const containerW = container.clientWidth
+    const containerH = container.clientHeight
+    if (containerW < 10 || containerH < 10) return null
+
+    // 获取当前 zoom（convertToPixel 基于当前状态，需归一化到 zoom=1）
+    const opt = chart.value.getOption() as { geo?: Array<{ zoom?: number }> }
+    const currentZoom = opt?.geo?.[0]?.zoom ?? 1
+
+    // 将省份 bbox 四角转为像素坐标
+    const topLeft = chart.value.convertToPixel('geo', [
+      bbox.minLng,
+      bbox.maxLat,
+    ])
+    const bottomRight = chart.value.convertToPixel('geo', [
+      bbox.maxLng,
+      bbox.minLat,
+    ])
+
+    if (!topLeft || !bottomRight) return null
+
+    // 归一化到 zoom=1 时的像素尺寸
+    const provincePixelW = Math.abs(bottomRight[0] - topLeft[0]) / currentZoom
+    const provincePixelH = Math.abs(bottomRight[1] - topLeft[1]) / currentZoom
+
+    if (provincePixelW < 1 || provincePixelH < 1) return null
+
+    // 目标：省份占容器的 85%（留出边距，确保完整显示 + 周围暗化省份可见）
+    const FILL_RATIO = 0.85
+    const zoomX = (containerW * FILL_RATIO) / provincePixelW
+    const zoomY = (containerH * FILL_RATIO) / provincePixelH
+
+    // 取较小值确保省份完整显示，并限制在 scaleLimit 范围内
+    let zoom = Math.min(zoomX, zoomY)
+    zoom = Math.max(zoom, 1.5) // 最小 1.5 避免太远
+    zoom = Math.min(zoom, 8) // 与 scaleLimit.max 对齐
+
+    // 地理中心（bbox 的中心点，而非城市平均坐标）
+    const center: [number, number] = [
+      (bbox.minLng + bbox.maxLng) / 2,
+      (bbox.minLat + bbox.maxLat) / 2,
+    ]
+
+    return { center, zoom }
   }
 
   /**
@@ -155,9 +266,8 @@ export function useMapChart(
    * mapName 为 null 时降级为无底图的纯点位渲染（使用 cartesian2d 坐标系）
    */
   function buildOption(mapName: string | null): echarts.EChartsCoreOption {
-    const { level, readonly: isReadonly } = params.value
+    const { readonly: isReadonly } = params.value
     const scatterData = buildScatterData()
-    const isCountryLevel = level === 'country'
     const hasMap = !!mapName
 
     const tooltipFormatter = (p: unknown) => {
@@ -197,6 +307,10 @@ export function useMapChart(
             zlevel: 2,
           },
         ],
+        animation: true,
+        animationDuration: 600,
+        animationEasing: 'cubicOut',
+        animationDurationUpdate: 300,
       }
     }
 
@@ -205,42 +319,48 @@ export function useMapChart(
       tooltip: {
         trigger: 'item',
         formatter: tooltipFormatter,
+        backgroundColor: 'rgba(255, 255, 255, 0.96)',
+        borderColor: 'rgba(228, 228, 231, 0.8)',
+        borderWidth: 1,
+        padding: [8, 12],
+        textStyle: {
+          color: '#18181b',
+          fontSize: 12,
+          fontFamily: 'Geist, ui-sans-serif, sans-serif',
+        },
+        extraCssText: 'border-radius: 8px; box-shadow: 0 4px 12px -2px rgba(0,0,0,0.08), 0 2px 4px -1px rgba(0,0,0,0.04); backdrop-filter: blur(8px);',
       },
       geo: {
         map: mapName ?? '',
         roam: isReadonly ? false : true,
         zoom: 1,
         scaleLimit: { min: 0.8, max: 8 },
-        // 地图区域样式
+        // 居中并撑满容器，保持地图宽高比
+        layoutCenter: ['50%', '55%'],
+        layoutSize: '95%',
+        // 地图区域默认样式
         itemStyle: {
           areaColor: MAP_COLORS.unlit,
-          borderColor: '#FFFFFF',
+          borderColor: MAP_COLORS.borderColor,
           borderWidth: 0.8,
+          shadowColor: MAP_COLORS.shadowColor,
+          shadowBlur: 6,
         },
         emphasis: {
           itemStyle: {
-            areaColor: '#FFE4D2',
-            borderColor: '#FF6B35',
+            areaColor: MAP_COLORS.hoverFill,
+            borderColor: MAP_COLORS.focusBorder,
             borderWidth: 1.2,
+            shadowColor: 'rgba(255, 107, 53, 0.15)',
+            shadowBlur: 10,
           },
           label: { show: false },
         },
         select: { disabled: true },
-        // 全国级点击省份下钻；省/市级点击不通过 geo 触发
-        ...(isCountryLevel
-          ? {
-              regions: buildProvinceRegions().map((r) => ({
-                name: r.name,
-                itemStyle: {
-                  areaColor: r.value > 0 ? '#FFD4B8' : MAP_COLORS.unlit,
-                  borderColor: '#FFFFFF',
-                },
-              })),
-            }
-          : {}),
+        regions: buildGeoRegions(),
       },
       series: [
-        // 全国级用 effectScatter 高亮居住地，普通 scatter 显示其他城市
+        // 已点亮城市：scatter + 柔和发光
         {
           name: 'cities',
           type: 'scatter',
@@ -252,28 +372,37 @@ export function useMapChart(
           label: {
             show: false,
           },
+          itemStyle: {
+            shadowColor: 'rgba(255, 107, 53, 0.4)',
+            shadowBlur: 6,
+          },
           emphasis: {
             scale: 1.4,
             label: {
               show: true,
               formatter: (p: unknown) => (p as { data?: ScatterDataItem }).data?.name ?? '',
               position: 'top',
-              color: '#1F2937',
+              color: '#18181b',
               fontSize: 12,
-              backgroundColor: 'rgba(255,255,255,0.9)',
-              padding: [3, 6],
-              borderRadius: 4,
+              fontFamily: 'Geist, ui-sans-serif, sans-serif',
+              fontWeight: 500,
+              backgroundColor: 'rgba(255,255,255,0.96)',
+              padding: [4, 8],
+              borderRadius: 6,
+              borderColor: 'rgba(228, 228, 231, 0.6)',
+              borderWidth: 1,
             },
           },
           zlevel: 2,
         },
+        // 居住地：effectScatter + 精致涟漪
         {
           name: 'residence',
           type: 'effectScatter',
           coordinateSystem: 'geo',
           data: scatterData.filter((d) => d.isResidence),
-          symbolSize: 14,
-          rippleEffect: { brushType: 'stroke', scale: 3, period: 4 },
+          symbolSize: 12,
+          rippleEffect: { brushType: 'stroke', scale: 2.5, period: 5 },
           showEffectOn: 'render',
           label: {
             show: true,
@@ -281,44 +410,90 @@ export function useMapChart(
             position: 'top',
             color: '#3B82F6',
             fontSize: 12,
-            fontWeight: 700,
-            backgroundColor: 'rgba(255,255,255,0.9)',
-            padding: [3, 6],
-            borderRadius: 4,
+            fontFamily: 'Geist, ui-sans-serif, sans-serif',
+            fontWeight: 600,
+            backgroundColor: 'rgba(255,255,255,0.96)',
+            padding: [4, 8],
+            borderRadius: 6,
+            borderColor: 'rgba(191, 219, 254, 0.6)',
+            borderWidth: 1,
           },
           itemStyle: {
             color: MAP_COLORS.residence,
             borderColor: '#FFFFFF',
             borderWidth: 2,
-            shadowColor: 'rgba(59,130,246,0.5)',
-            shadowBlur: 10,
+            shadowColor: 'rgba(59, 130, 246, 0.4)',
+            shadowBlur: 8,
           },
           zlevel: 3,
         },
       ],
+      // 入场动画 + 切换过渡
+      animation: true,
+      animationDuration: 800,
+      animationEasing: 'cubicOut',
+      animationDurationUpdate: 1000,
+      animationEasingUpdate: 'cubicIn',
     }
 
     return option
   }
 
   /**
-   * 渲染地图（注册 GeoJSON + setOption）
+   * 渲染地图（始终加载全国地图，省市级通过 zoom + regions 聚焦实现）
    * GeoJSON 缺失时降级为无底图的纯点位渲染
    */
   async function renderChart(): Promise<void> {
     if (!chart.value) return
     loading.value = true
     try {
-      const { level, regionCode } = params.value
-      const mapName = await registerMapForLevel(level, regionCode)
+      // 始终加载全国地图
+      const mapName = await registerMapForLevel('country')
       mapAvailable.value = !!mapName
+
+      // 根据当前 level 恢复聚焦状态（组件重新挂载时）
+      const { level, regionCode } = params.value
+      if (level === 'province' && regionCode) {
+        focusedProvinceCode.value = regionCode
+      } else if (level === 'city' && regionCode) {
+        const city = getCityByCode(regionCode)
+        if (city) focusedProvinceCode.value = city.provinceCode
+      } else {
+        focusedProvinceCode.value = null
+      }
+
       const option = buildOption(mapName)
-      // notMerge: true 完全替换，避免 geo/cartesian2d 降级切换时配置残留
       chart.value.setOption(option, { notMerge: true })
-      // 缓存 zoom 用于按钮控制
-      const opt = chart.value.getOption() as { geo?: Array<{ zoom?: number }> }
-      const zoom = opt?.geo?.[0]?.zoom
-      if (typeof zoom === 'number') currentZoom.value = zoom
+
+      // 恢复聚焦位置的缩放
+      if (mapName && focusedProvinceCode.value) {
+        let center: [number, number] | null = null
+        let zoom = 4
+
+        if (level === 'city' && regionCode) {
+          // 市级：用城市坐标 + 固定 zoom
+          const city = getCityByCode(regionCode)
+          if (city) {
+            center = [city.longitude, city.latitude]
+            zoom = 6
+          }
+        }
+
+        if (!center) {
+          // 省级：用自适应计算（基于省份边界框 + 容器尺寸）
+          const adaptive = calculateAdaptiveFocus(focusedProvinceCode.value)
+          if (adaptive) {
+            center = adaptive.center
+            zoom = adaptive.zoom
+          } else {
+            center = getProvinceCenter(focusedProvinceCode.value)
+          }
+        }
+
+        if (center) {
+          chart.value.setOption({ geo: { center, zoom } }, { notMerge: false })
+        }
+      }
     } catch (err) {
       console.warn('[useMapChart] 渲染失败', err)
       mapAvailable.value = false
@@ -333,11 +508,14 @@ export function useMapChart(
    */
   function updateData(): void {
     if (!chart.value) return
-    const mapName = mapAvailable.value
-      ? getMapName(params.value.level, params.value.regionCode)
-      : null
-    const option = buildOption(mapName)
-    chart.value.setOption(option, { notMerge: true })
+    // 仅更新 series 数据，不触碰 geo 的 center/zoom/layoutCenter/regions
+    const scatterData = buildScatterData()
+    chart.value.setOption({
+      series: [
+        { data: scatterData.filter((d) => !d.isResidence) },
+        { data: scatterData.filter((d) => d.isResidence) },
+      ],
+    }, { notMerge: false })
   }
 
   /**
@@ -377,15 +555,14 @@ export function useMapChart(
         callbacks.value.onCityClick(city)
       }
     })
-    // 全国级点击省份下钻（geo region 点击）
+    // 全国级点击省份 → 触发回调（由 BaseMap watch 调用 focusProvince 实现放大+暗化）
     chart.value.on('click', 'geo', (evt: unknown) => {
       const e = evt as { name?: string }
       if (params.value.level !== 'country') return
       if (params.value.readonly) return
-      if (e.name && callbacks.value.onRegionClick) {
-        // GeoJSON region 名称需调用方自行解析为省份 adcode
-        callbacks.value.onRegionClick(e.name, e.name)
-      }
+      if (flying.value) return
+      if (!e.name) return
+      callbacks.value.onRegionClick?.(e.name, e.name)
     })
     // 同步缩放比例
     chart.value.on('georoam', () => {
@@ -393,6 +570,137 @@ export function useMapChart(
       const zoom = (opt as { geo?: Array<{ zoom?: number }> })?.geo?.[0]?.zoom
       if (typeof zoom === 'number') currentZoom.value = zoom
     })
+  }
+
+  /**
+   * 渐变动画过渡 geo.regions 的暗化程度
+   * 通过分帧逐步调整非聚焦省份的 opacity，实现柔和的明暗过渡
+   * @param fromDim 起始暗化 opacity（1 = 正常，DIM_OPACITY = 完全暗化）
+   * @param toDim 目标暗化 opacity
+   * @param duration 过渡时长 ms
+   */
+  function animateRegionsDim(
+    fromDim: number,
+    toDim: number,
+    duration: number,
+  ): void {
+    if (!chart.value) return
+    clearRegionsAnim()
+    const start = performance.now()
+    // easeOutCubic：先快后慢，符合视觉柔和感
+    const ease = (t: number) => 1 - Math.pow(1 - t, 3)
+
+    regionsAnimTimer = setInterval(() => {
+      if (!chart.value) {
+        clearRegionsAnim()
+        return
+      }
+      const elapsed = performance.now() - start
+      const progress = Math.min(elapsed / duration, 1)
+      const eased = ease(progress)
+      const currentDim = fromDim + (toDim - fromDim) * eased
+
+      chart.value.setOption(
+        {
+          geo: {
+            regions: buildGeoRegions(currentDim),
+          },
+        },
+        { notMerge: false },
+      )
+
+      if (progress >= 1) {
+        clearRegionsAnim()
+      }
+    }, 16)
+  }
+
+  /**
+   * 聚焦省份：先平滑放大（仅 center/zoom 动画），动画结束后渐变应用聚焦样式
+   * 放大过程中不触碰 regions，保证过渡丝滑无闪烁
+   * 放大到位后用 350ms 渐变暗化其他省份，避免生硬切换
+   *
+   * 省级聚焦：自适应计算 center/zoom（基于省份边界框 + 容器尺寸）
+   * 市级聚焦：使用调用方传入的 center/zoom（城市坐标 + 固定 zoom）
+   */
+  function focusProvince(
+    provinceCode: string,
+    options?: { center?: [number, number]; zoom?: number },
+  ): void {
+    if (!chart.value) return
+    focusedProvinceCode.value = provinceCode
+
+    // 省级聚焦（无 options）→ 自适应计算；市级聚焦（有 options）→ 使用传入值
+    let center: [number, number] | null
+    let targetZoom: number
+
+    if (options?.center && options?.zoom) {
+      center = options.center
+      targetZoom = options.zoom
+    } else {
+      const adaptive = calculateAdaptiveFocus(provinceCode)
+      if (adaptive) {
+        center = adaptive.center
+        targetZoom = adaptive.zoom
+      } else {
+        // 自适应计算失败（如 GeoJSON 未加载），回退到城市平均中心 + 固定 zoom
+        center = options?.center ?? getProvinceCenter(provinceCode)
+        targetZoom = options?.zoom ?? 4
+      }
+    }
+
+    flying.value = true
+    if (flyTimer) clearTimeout(flyTimer)
+    clearRegionsAnim()
+
+    // 阶段一：仅动画 center/zoom，不更新 regions
+    if (center) {
+      chart.value.setOption(
+        {
+          geo: {
+            center,
+            zoom: targetZoom,
+          },
+        },
+        { notMerge: false },
+      )
+    }
+
+    // 阶段二：放大动画结束后，渐变暗化其他省份（从 1.0 → DIM_OPACITY）
+    flyTimer = setTimeout(() => {
+      flying.value = false
+      animateRegionsDim(1, DIM_OPACITY, REGIONS_FADE_DURATION)
+    }, 1000)
+  }
+
+  /**
+   * 取消聚焦：渐变恢复省份样式 + 同时缩小回全国视图（并行，更流畅）
+   */
+  function unfocus(): void {
+    if (!chart.value) return
+    focusedProvinceCode.value = null
+
+    flying.value = true
+    if (flyTimer) clearTimeout(flyTimer)
+    clearRegionsAnim()
+
+    // 渐变恢复 regions（350ms）与缩小动画（1000ms）并行
+    // 前 350ms regions 逐渐恢复亮色，同时地图开始缩小，视觉连贯
+    animateRegionsDim(DIM_OPACITY, 1, REGIONS_FADE_DURATION)
+
+    chart.value.setOption(
+      {
+        geo: {
+          center: [104.5, 36],
+          zoom: 1,
+        },
+      },
+      { notMerge: false },
+    )
+
+    flyTimer = setTimeout(() => {
+      flying.value = false
+    }, 1000)
   }
 
   /**
@@ -425,8 +733,18 @@ export function useMapChart(
     if (!containerRef.value) return
     chart.value = echarts.init(containerRef.value)
     bindEvents()
+    // 容器尺寸变化时：先 resize 实例，若当前有聚焦省份则重新计算自适应缩放
     resizeObserver = new ResizeObserver(() => {
       chart.value?.resize()
+      if (focusedProvinceCode.value && !flying.value) {
+        const adaptive = calculateAdaptiveFocus(focusedProvinceCode.value)
+        if (adaptive && chart.value) {
+          chart.value.setOption(
+            { geo: { center: adaptive.center, zoom: adaptive.zoom } },
+            { notMerge: false },
+          )
+        }
+      }
     })
     resizeObserver.observe(containerRef.value)
   }
@@ -447,6 +765,8 @@ export function useMapChart(
   })
 
   onBeforeUnmount(() => {
+    if (flyTimer) clearTimeout(flyTimer)
+    clearRegionsAnim()
     disposeChart()
   })
 
@@ -455,11 +775,14 @@ export function useMapChart(
     loading,
     mapAvailable,
     currentZoom,
+    flying,
     renderChart,
     updateData,
     zoomIn,
     zoomOut,
     resize,
+    focusProvince,
+    unfocus,
   }
 }
 

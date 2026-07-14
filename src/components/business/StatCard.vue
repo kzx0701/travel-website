@@ -3,6 +3,7 @@
  * StatCard - 紧凑统计卡片
  *
  * 用于左侧快捷统计：已点亮城市数 / 覆盖省份数 / 总出行次数
+ * 样式参考 shadcn --preset b37uZfrW7：上标签小字 + 下数值大字
  */
 withDefaults(
   defineProps<{
@@ -17,21 +18,19 @@ withDefaults(
 </script>
 
 <template>
-  <div
-    class="flex flex-col items-center justify-center rounded-lg border border-slate-200 bg-slate-50 px-2 py-2.5 text-center"
-  >
-    <div class="flex items-center gap-1">
+  <div class="flex flex-1 flex-col items-center justify-center text-center">
+    <div class="text-[10px] font-medium uppercase tracking-wider text-zinc-400">
+      {{ label }}
+    </div>
+    <div class="mt-0.5 flex items-center gap-1">
       <span
         v-if="icon"
         class="text-xs leading-none text-primary"
         v-html="icon"
       />
-      <span
-        class="text-lg font-bold tracking-tight text-slate-800 tabular-nums"
-      >
+      <span class="text-base font-semibold tracking-tight text-zinc-800 tabular-nums">
         {{ value }}
       </span>
     </div>
-    <div class="mt-0.5 text-xs text-slate-400">{{ label }}</div>
   </div>
 </template>

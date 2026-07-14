@@ -7,6 +7,8 @@ import StatCard from '@/components/business/StatCard.vue'
 import BaseMap from '@/components/business/BaseMap.vue'
 import MapBreadcrumb from '@/components/business/MapBreadcrumb.vue'
 import RightPanel from '@/components/business/RightPanel.vue'
+import { Separator } from '@/components/ui/separator'
+import { toast } from 'vue-sonner'
 import { useMapStore, type CityFilter } from '@/stores/map'
 import { useVisitRecordStore } from '@/stores/visitRecord'
 import { useResidenceStore } from '@/stores/residence'
@@ -18,10 +20,15 @@ const residenceStore = useResidenceStore()
 
 // ---- 初始化加载 ----
 onMounted(async () => {
-  await Promise.all([
-    visitRecordStore.loadAll(),
-    residenceStore.load(),
-  ])
+  try {
+    await Promise.all([
+      visitRecordStore.loadAll(),
+      residenceStore.load(),
+    ])
+  } catch (e) {
+    toast.error('地图数据加载失败，请刷新重试')
+    console.error(e)
+  }
 })
 
 // ---- 派生数据 ----
@@ -102,10 +109,12 @@ function handleFilterChange(filter: CityFilter): void {
         </div>
 
         <!-- 快捷统计 -->
-        <div class="flex gap-2 px-4 pb-3">
-          <StatCard label="已点亮城" :value="stats.litCityCount" />
+        <div class="mx-4 mb-3 flex items-center rounded-xl border border-border/60 bg-card/60 p-3">
+          <StatCard label="已点亮" :value="stats.litCityCount" />
+          <Separator orientation="vertical" class="mx-1 h-8" />
           <StatCard label="覆盖省" :value="stats.coveredProvinceCount" />
-          <StatCard label="出行次" :value="stats.totalTripCount" />
+          <Separator orientation="vertical" class="mx-1 h-8" />
+          <StatCard label="出行次数" :value="stats.totalTripCount" />
         </div>
 
         <!-- 城市列表 -->
@@ -125,28 +134,28 @@ function handleFilterChange(filter: CityFilter): void {
       </div>
     </template>
 
-    <!-- 中地图区 -->
-    <div class="flex h-full flex-col">
-      <!-- 面包屑 -->
-      <div class="shrink-0 border-b border-slate-100 px-4 py-2.5">
+    <!-- 中地图区：地图占满，面包屑悬浮其上 -->
+    <div class="relative h-full w-full">
+      <!-- 地图 -->
+      <BaseMap
+        :level="mapStore.mapConfig.level"
+        :region-code="mapStore.mapConfig.regionCode"
+        :lit-cities="visitRecordStore.litCities"
+        :city-visit-count="visitRecordStore.cityVisitCount"
+        :residence-city-code="residenceCityCode"
+        @city-click="handleCityClick"
+        @region-click="handleRegionClick"
+      />
+
+      <!-- 面包屑：悬浮于地图左上角 -->
+      <div
+        class="pointer-events-auto absolute left-3 top-3 z-10 rounded-lg bg-white/80 px-3 py-1.5 shadow-sm ring-1 ring-zinc-200/60 backdrop-blur-md"
+      >
         <MapBreadcrumb
           :level="mapStore.currentLevel"
           :province-name="mapStore.breadcrumbNames.provinceName"
           :city-name="mapStore.breadcrumbNames.cityName"
           @navigate="handleBreadcrumbNavigate"
-        />
-      </div>
-
-      <!-- 地图 -->
-      <div class="min-h-0 flex-1">
-        <BaseMap
-          :level="mapStore.mapConfig.level"
-          :region-code="mapStore.mapConfig.regionCode"
-          :lit-cities="visitRecordStore.litCities"
-          :city-visit-count="visitRecordStore.cityVisitCount"
-          :residence-city-code="residenceCityCode"
-          @city-click="handleCityClick"
-          @region-click="handleRegionClick"
         />
       </div>
     </div>

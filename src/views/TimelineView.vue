@@ -6,6 +6,7 @@ import MultiSelect from '@/components/business/MultiSelect.vue'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import { DatePicker } from '@/components/ui/date-picker'
+import { toast } from 'vue-sonner'
 import { useVisitRecordStore } from '@/stores/visitRecord'
 import type { VisitRecord } from '@/types'
 
@@ -111,7 +112,12 @@ const hasAnyRecords = computed(() => visitRecordStore.records.length > 0)
 onMounted(async () => {
   // 按需加载：若未加载则拉取
   if (!visitRecordStore.loading && visitRecordStore.records.length === 0) {
-    await visitRecordStore.loadAll()
+    try {
+      await visitRecordStore.loadAll()
+    } catch (e) {
+      toast.error('时间线数据加载失败，请刷新重试')
+      console.error(e)
+    }
   }
 })
 </script>

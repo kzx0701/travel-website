@@ -549,3 +549,15 @@ export function getCityByCode(code: string): City | undefined {
 export function getProvinceByCode(code: string): Province | undefined {
   return provinceMap[code]
 }
+
+/**
+ * 根据省份编码获取省份中心坐标 [lng, lat]
+ * 取该省所有城市经纬度的平均值作为近似中心点
+ */
+export function getProvinceCenter(code: string): [number, number] | null {
+  const provinceCities = cities.filter((c) => c.provinceCode === code)
+  if (provinceCities.length === 0) return null
+  const lng = provinceCities.reduce((sum, c) => sum + c.longitude, 0) / provinceCities.length
+  const lat = provinceCities.reduce((sum, c) => sum + c.latitude, 0) / provinceCities.length
+  return [lng, lat]
+}
