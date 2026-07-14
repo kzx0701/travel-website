@@ -1,7 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
 import { toast } from 'vue-sonner'
-import { toast } from 'vue-sonner'
 import { Plus, Check, ChevronsUpDown, CircleMinus } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import {
