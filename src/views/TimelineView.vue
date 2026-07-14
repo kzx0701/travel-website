@@ -1,8 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import AppNavbar from '@/components/layout/AppNavbar.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import TimelineItem from '@/components/business/TimelineItem.vue'
+import MultiSelect from '@/components/business/MultiSelect.vue'
+import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { DatePicker } from '@/components/ui/date-picker'
 import { useVisitRecordStore } from '@/stores/visitRecord'
 import type { VisitRecord } from '@/types'
 
@@ -26,7 +29,9 @@ const cityOptions = computed(() => {
   for (const r of visitRecordStore.records) {
     set.add(r.cityName)
   }
-  return Array.from(set).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'))
+  return Array.from(set)
+    .sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'))
+    .map((name) => ({ value: name, label: name }))
 })
 
 // 目的选项：从全部记录中提取去重
@@ -35,7 +40,7 @@ const purposeOptions = computed(() => {
   for (const r of visitRecordStore.records) {
     set.add(r.purpose)
   }
-  return Array.from(set)
+  return Array.from(set).map((name) => ({ value: name, label: name }))
 })
 
 const hasActiveFilter = computed(
@@ -112,16 +117,11 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex h-screen flex-col overflow-hidden bg-slate-50">
-    <!-- 顶部导航 -->
-    <AppNavbar />
-
-    <!-- 内容区 -->
-    <main class="flex-1 overflow-y-auto">
+  <main class="h-full overflow-y-auto bg-slate-50">
       <div class="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:py-10">
         <!-- 页面标题 -->
         <div class="mb-6">
-          <h1 class="text-2xl font-bold tracking-tight text-slate-800">
+          <h1 class="font-serif text-2xl tracking-tight text-slate-800">
             时间线
           </h1>
           <p class="mt-1 text-sm text-slate-500">
@@ -134,64 +134,43 @@ onMounted(async () => {
           class="mb-6 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
         >
           <div class="flex flex-wrap items-center gap-3">
-            <el-select
+            <MultiSelect
               v-model="selectedCities"
-              multiple
-              collapse-tags
-              collapse-tags-tooltip
-              clearable
+              :options="cityOptions"
               placeholder="按城市筛选"
-              class="!w-44"
-            >
-              <el-option
-                v-for="name in cityOptions"
-                :key="name"
-                :label="name"
-                :value="name"
-              />
-            </el-select>
-            <el-select
-              v-model="selectedPurposes"
-              multiple
-              collapse-tags
-              collapse-tags-tooltip
-              clearable
-              placeholder="按目的筛选"
-              class="!w-44"
-            >
-              <el-option
-                v-for="name in purposeOptions"
-                :key="name"
-                :label="name"
-                :value="name"
-              />
-            </el-select>
-            <el-date-picker
-              v-model="dateRange"
-              type="daterange"
-              range-separator="—"
-              start-placeholder="开始日期"
-              end-placeholder="结束日期"
-              value-format="YYYY-MM-DD"
-              class="!w-72"
+              search-placeholder="搜索城市..."
+              class="w-44"
             />
-            <button
+            <MultiSelect
+              v-model="selectedPurposes"
+              :options="purposeOptions"
+              placeholder="按目的筛选"
+              search-placeholder="搜索目的..."
+              class="w-44"
+            />
+            <DatePicker
+              v-model="dateRange"
+              range
+              class="w-72"
+            />
+            <Button
               v-if="hasActiveFilter"
-              type="button"
-              class="inline-flex h-8 items-center rounded-md border border-slate-200 px-3 text-xs font-medium text-slate-500 transition-colors hover:bg-slate-50"
+              variant="outline"
+              size="sm"
+              class="h-8 text-xs"
               @click="clearFilters"
             >
               清除筛选
-            </button>
+            </Button>
           </div>
         </section>
 
         <!-- 加载骨架屏 -->
         <div v-if="visitRecordStore.loading" class="space-y-4">
-          <div
+          <Skeleton
             v-for="i in 4"
             :key="i"
-            class="h-16 animate-pulse rounded-lg bg-slate-100"
+            class="h-16 rounded-lg"
           />
         </div>
 
@@ -203,12 +182,11 @@ onMounted(async () => {
           subtitle="前往地图点亮你的第一座城市吧"
         >
           <template #action>
-            <router-link
-              to="/"
-              class="inline-flex h-9 items-center rounded-lg bg-warm px-4 text-sm font-semibold text-white transition-colors hover:bg-warm/90"
-            >
-              去地图
-            </router-link>
+            <Button as-child>
+              <router-link to="/">
+                去地图
+              </router-link>
+            </Button>
           </template>
         </EmptyState>
 
@@ -219,13 +197,9 @@ onMounted(async () => {
           title="所选筛选条件下暂无记录"
         >
           <template #action>
-            <button
-              type="button"
-              class="inline-flex h-9 items-center rounded-lg border border-slate-200 px-4 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-50"
-              @click="clearFilters"
-            >
+            <Button variant="outline" @click="clearFilters">
               清除筛选
-            </button>
+            </Button>
           </template>
         </EmptyState>
 
@@ -261,5 +235,4 @@ onMounted(async () => {
         </div>
       </div>
     </main>
-  </div>
 </template>

@@ -19,31 +19,31 @@ const routes: RouteRecordRaw[] = [
     path: '/',
     name: 'map',
     component: () => import('@/views/MapView.vue'),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, showNavbar: true },
   },
   {
     path: '/statistics',
     name: 'statistics',
     component: () => import('@/views/StatisticsView.vue'),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, showNavbar: true },
   },
   {
     path: '/timeline',
     name: 'timeline',
     component: () => import('@/views/TimelineView.vue'),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, showNavbar: true },
   },
   {
     path: '/settings',
     name: 'settings',
     component: () => import('@/views/SettingsView.vue'),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, showNavbar: true },
   },
   {
     path: '/profile',
     name: 'profile',
     component: () => import('@/views/ProfileView.vue'),
-    meta: { requiresAuth: true },
+    meta: { requiresAuth: true, showNavbar: true },
   },
   {
     // 公开主页：通过 share_token 匿名访问，无需登录

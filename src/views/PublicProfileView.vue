@@ -5,9 +5,12 @@ import StatCard from '@/components/business/StatCard.vue'
 import BaseMap from '@/components/business/BaseMap.vue'
 import TripCard from '@/components/business/TripCard.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
+import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { getPublicProfile, type PublicProfile } from '@/api/profileSettings'
 import { getAvatarUrl } from '@/utils/avatar'
 import { cityMap } from '@/data/cities'
+import { MapPin } from '@lucide/vue'
 import type { City, VisitRecord } from '@/types'
 
 /**
@@ -103,28 +106,16 @@ onMounted(async () => {
         to="/login"
         class="flex items-center gap-2"
       >
-        <svg
-          class="h-6 w-6 text-warm"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-          <circle cx="12" cy="10" r="3" />
-        </svg>
+        <MapPin class="h-6 w-6 text-warm" />
         <span class="text-base font-bold tracking-tight text-slate-800">
           足迹地图
         </span>
       </router-link>
-      <router-link
-        to="/register"
-        class="inline-flex h-8 items-center rounded-lg bg-warm px-3 text-sm font-medium text-white transition-colors hover:bg-warm/90"
-      >
-        创建我的足迹
-      </router-link>
+      <Button as-child size="sm">
+        <router-link to="/register">
+          创建我的足迹
+        </router-link>
+      </Button>
     </header>
 
     <!-- 内容区 -->
@@ -132,9 +123,9 @@ onMounted(async () => {
       <div class="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:py-10">
         <!-- 加载中 -->
         <div v-if="loading" class="space-y-6">
-          <div class="h-32 animate-pulse rounded-xl bg-slate-100" />
-          <div class="h-80 animate-pulse rounded-xl bg-slate-100" />
-          <div class="h-40 animate-pulse rounded-xl bg-slate-100" />
+          <Skeleton class="h-32 rounded-xl" />
+          <Skeleton class="h-80 rounded-xl" />
+          <Skeleton class="h-40 rounded-xl" />
         </div>
 
         <!-- 错误状态 -->
@@ -145,12 +136,11 @@ onMounted(async () => {
           :subtitle="errorMsg + '。可能链接已失效或对方关闭了公开访问。'"
         >
           <template #action>
-            <router-link
-              to="/login"
-              class="inline-flex h-9 items-center rounded-lg bg-warm px-4 text-sm font-semibold text-white transition-colors hover:bg-warm/90"
-            >
-              返回首页
-            </router-link>
+            <Button as-child>
+              <router-link to="/login">
+                返回首页
+              </router-link>
+            </Button>
           </template>
         </EmptyState>
 
@@ -177,7 +167,7 @@ onMounted(async () => {
               </div>
 
               <div class="min-w-0 flex-1 text-center sm:text-left">
-                <h2 class="truncate text-xl font-bold text-slate-800">
+                <h2 class="truncate font-serif text-xl text-slate-800">
                   {{ profile.displayName }}
                 </h2>
                 <p class="mt-1 text-xs text-slate-400">的足迹地图</p>

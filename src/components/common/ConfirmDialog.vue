@@ -1,30 +1,45 @@
 <script setup lang="ts">
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+
 /**
- * ConfirmDialog - 通用确认对话框（声明式）
+ * ConfirmDialog - 通用确认对话框（声明式，基于 shadcn AlertDialog）
  *
- * 用于删除/修改等危险操作的二次确认。
- * 项目中命令式场景统一使用 ElMessageBox（文案与按钮风格见 useConfirm），
- * 本组件适用于需要在模板中声明确认弹窗的场景。
+ * 用于删除/修改等危险操作的二次确认。AlertDialog 强制用户点击按钮，
+ * 不支持点击遮罩或按 Esc 关闭，避免误操作。
  *
  * v-model:visible  控制显隐
  * title             标题
- * message           正文（支持 \n 换行）
+ * description       正文（支持 \n 换行）
  * confirmText       确认按钮文案（默认"确认"）
  * cancelText        取消按钮文案（默认"取消"）
- * danger            是否为危险操作（确认按钮红色）
+ * danger            是否为危险操作（确认按钮 destructive 样式）
+ *
+ * Emits:
+ *  - update:visible
+ *  - confirm   用户点击确认按钮
+ *  - cancel    用户点击取消按钮
  */
 withDefaults(
   defineProps<{
     visible: boolean
     title?: string
-    message?: string
+    description?: string
     confirmText?: string
     cancelText?: string
     danger?: boolean
   }>(),
   {
     title: '确认操作',
-    message: '',
+    description: '',
     confirmText: '确认',
     cancelText: '取消',
     danger: false,
@@ -37,48 +52,39 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
-function handleClose(): void {
-  emit('update:visible', false)
+function handleConfirm(): void {
+  emit('confirm')
+}
+
+function handleCancel(): void {
   emit('cancel')
 }
 
-function handleConfirm(): void {
-  emit('update:visible', false)
-  emit('confirm')
+function handleUpdateOpen(val: boolean): void {
+  emit('update:visible', val)
 }
 </script>
 
 <template>
-  <el-dialog
-    :model-value="visible"
-    :title="title"
-    width="380px"
-    append-to-body
-    :close-on-click-modal="false"
-    @update:model-value="(v: boolean) => emit('update:visible', v)"
-    @close="handleClose"
-  >
-    <p class="whitespace-pre-line text-sm leading-relaxed text-slate-600">
-      {{ message }}
-    </p>
-    <template #footer>
-      <div class="flex justify-end gap-2">
-        <button
-          type="button"
-          class="rounded-md border border-slate-200 px-4 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-50"
-          @click="handleClose"
-        >
+  <AlertDialog :open="visible" @update:open="handleUpdateOpen">
+    <AlertDialogContent class="max-w-[420px]">
+      <AlertDialogHeader>
+        <AlertDialogTitle>{{ title }}</AlertDialogTitle>
+        <AlertDialogDescription class="whitespace-pre-line leading-relaxed">
+          {{ description }}
+        </AlertDialogDescription>
+      </AlertDialogHeader>
+      <AlertDialogFooter>
+        <AlertDialogCancel @click="handleCancel">
           {{ cancelText }}
-        </button>
-        <button
-          type="button"
-          class="rounded-md px-4 py-1.5 text-sm font-medium text-white transition-colors disabled:opacity-60"
-          :class="danger ? 'bg-red-500 hover:bg-red-600' : 'bg-warm hover:bg-warm/90'"
+        </AlertDialogCancel>
+        <AlertDialogAction
+          :class="danger ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''"
           @click="handleConfirm"
         >
           {{ confirmText }}
-        </button>
-      </div>
-    </template>
-  </el-dialog>
+        </AlertDialogAction>
+      </AlertDialogFooter>
+    </AlertDialogContent>
+  </AlertDialog>
 </template>

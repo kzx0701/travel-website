@@ -1,20 +1,42 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { toast } from 'vue-sonner'
+import { Plus, Check, ChevronsUpDown } from '@lucide/vue'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from '@/components/ui/command'
 import { usePurposeStore } from '@/stores/purpose'
 
 /**
- * PurposeSelect - 出行目的选择器
+ * PurposeSelect - 出行目的选择器（Combobox 形态）
  *
- * 合并展示系统预设 + 用户自定义分类（el-option-group 分组）。
- * 支持在下拉底部点击 "+ 新建分类" 创建自定义分类并自动选中。
- *
- * Props:
- *  - modelValue: 当前选中的目的分类名（字符串）
- * Emits:
- *  - update:modelValue
- *  - change(name)
+ * Popover + Command 组合实现：
+ *  - 系统预设 / 我的自定义分组
+ *  - 顶部搜索过滤
+ *  - 底部 "+ 新建分类" 项（preventDefault 后打开 Dialog）
  */
+
 defineProps<{
   modelValue: string
 }>()
@@ -25,13 +47,14 @@ const emit = defineEmits<{
 }>()
 
 const purposeStore = usePurposeStore()
+const open = ref(false)
 
 onMounted(async () => {
   if (purposeStore.categories.length === 0) {
     try {
       await purposeStore.loadAll()
     } catch (e) {
-      ElMessage.error('出行目的加载失败')
+      toast.error('出行目的加载失败')
       console.error(e)
     }
   }
@@ -40,10 +63,20 @@ onMounted(async () => {
 const systemCategories = computed(() => purposeStore.systemCategories)
 const customCategories = computed(() => purposeStore.customCategories)
 
-function handleChange(value: string | number | boolean | null): void {
-  const v = String(value ?? '')
-  emit('update:modelValue', v)
-  emit('change', v)
+// "新建分类" 哨兵值，避免与真实分类名冲突
+const CREATE_SENTINEL = '__create_purpose__'
+
+function selectValue(value: string): void {
+  emit('update:modelValue', value)
+  emit('change', value)
+  open.value = false
+}
+
+// CommandItem 的 select 事件支持 preventDefault() 阻止选中
+function handleCreateSelect(event: Event): void {
+  event.preventDefault()
+  open.value = false
+  openCreate()
 }
 
 // ---- 新建自定义分类 ----
@@ -59,13 +92,13 @@ function openCreate(): void {
 async function confirmCreate(): Promise<void> {
   const name = newCategoryName.value.trim()
   if (!name) {
-    ElMessage.warning('请输入分类名称')
+    toast.warning('请输入分类名称')
     return
   }
   // 重名校验
   const exists = purposeStore.categories.some((c) => c.name === name)
   if (exists) {
-    ElMessage.warning('该分类已存在')
+    toast.warning('该分类已存在')
     return
   }
   creating.value = true
@@ -75,9 +108,9 @@ async function confirmCreate(): Promise<void> {
     emit('change', category.name)
     newCategoryVisible.value = false
     newCategoryName.value = ''
-    ElMessage.success('已新建分类')
+    toast.success('已新建分类')
   } catch (e) {
-    ElMessage.error('新建失败')
+    toast.error('新建失败')
     console.error(e)
   } finally {
     creating.value = false
@@ -91,95 +124,106 @@ function cancelCreate(): void {
 </script>
 
 <template>
-  <el-select
-    :model-value="modelValue"
-    placeholder="请选择出行目的"
-    class="w-full"
-    :loading="purposeStore.loading"
-    @change="handleChange"
-  >
-    <!-- 系统预设分组 -->
-    <el-option-group
-      v-if="systemCategories.length"
-      label="系统预设"
-    >
-      <el-option
-        v-for="cat in systemCategories"
-        :key="cat.id"
-        :label="cat.name"
-        :value="cat.name"
-      />
-    </el-option-group>
-
-    <!-- 自定义分组 -->
-    <el-option-group
-      v-if="customCategories.length"
-      label="我的自定义"
-    >
-      <el-option
-        v-for="cat in customCategories"
-        :key="cat.id"
-        :label="cat.name"
-        :value="cat.name"
-      />
-    </el-option-group>
-
-    <!-- 新建分类入口 -->
-    <template #footer>
-      <button
+  <Popover v-model:open="open">
+    <PopoverTrigger as-child>
+      <Button
         type="button"
-        class="flex w-full items-center justify-center gap-1 py-1.5 text-xs font-medium text-warm transition-colors hover:text-warm/80"
-        @click="openCreate"
+        variant="outline"
+        role="combobox"
+        :aria-expanded="open"
+        class="w-full justify-between font-normal"
+        :class="!modelValue && 'text-muted-foreground'"
       >
-        <svg
-          class="h-3.5 w-3.5"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M12 5v14M5 12h14" />
-        </svg>
-        新建分类
-      </button>
-    </template>
-  </el-select>
+        <span class="truncate">
+          {{ modelValue || '请选择出行目的' }}
+        </span>
+        <ChevronsUpDown class="h-4 w-4 shrink-0 opacity-50" />
+      </Button>
+    </PopoverTrigger>
+    <PopoverContent class="w-[--reka-popper-anchor-width] p-0" align="start">
+      <Command>
+        <CommandInput placeholder="搜索分类..." />
+        <CommandList>
+          <CommandEmpty>无匹配分类</CommandEmpty>
+          <CommandGroup
+            v-if="systemCategories.length"
+            heading="系统预设"
+          >
+            <CommandItem
+              v-for="cat in systemCategories"
+              :key="cat.id"
+              :value="cat.name"
+              @select="selectValue(cat.name)"
+            >
+              <Check
+                class="h-4 w-4"
+                :class="modelValue === cat.name ? 'opacity-100' : 'opacity-0'"
+              />
+              <span>{{ cat.name }}</span>
+            </CommandItem>
+          </CommandGroup>
+          <CommandGroup
+            v-if="customCategories.length"
+            heading="我的自定义"
+          >
+            <CommandItem
+              v-for="cat in customCategories"
+              :key="cat.id"
+              :value="cat.name"
+              @select="selectValue(cat.name)"
+            >
+              <Check
+                class="h-4 w-4"
+                :class="modelValue === cat.name ? 'opacity-100' : 'opacity-0'"
+              />
+              <span>{{ cat.name }}</span>
+            </CommandItem>
+          </CommandGroup>
+          <CommandSeparator />
+          <CommandGroup>
+            <CommandItem
+              :value="CREATE_SENTINEL"
+              @select="handleCreateSelect"
+            >
+              <Plus class="h-4 w-4 text-primary" />
+              <span class="text-primary">新建分类</span>
+            </CommandItem>
+          </CommandGroup>
+        </CommandList>
+      </Command>
+    </PopoverContent>
+  </Popover>
 
   <!-- 新建分类弹窗 -->
-  <el-dialog
-    v-model="newCategoryVisible"
-    title="新建出行目的分类"
-    width="360px"
-    append-to-body
-    :close-on-click-modal="false"
+  <Dialog
+    :open="newCategoryVisible"
+    @update:open="(v) => (newCategoryVisible = v)"
   >
-    <el-input
-      v-model="newCategoryName"
-      placeholder="如：摄影、徒步"
-      maxlength="10"
-      show-word-limit
-      @keyup.enter="confirmCreate"
-    />
-    <template #footer>
-      <div class="flex justify-end gap-2">
-        <button
-          type="button"
-          class="rounded-md border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-50"
-          @click="cancelCreate"
-        >
+    <DialogContent class="max-w-[360px]">
+      <DialogHeader>
+        <DialogTitle>新建出行目的分类</DialogTitle>
+        <DialogDescription class="sr-only">
+          新建出行目的分类
+        </DialogDescription>
+      </DialogHeader>
+      <Input
+        v-model="newCategoryName"
+        placeholder="如：摄影、徒步"
+        maxlength="10"
+        @keyup.enter="confirmCreate"
+      />
+      <DialogFooter>
+        <Button variant="outline" size="sm" @click="cancelCreate">
           取消
-        </button>
-        <button
-          type="button"
-          class="rounded-md bg-warm px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-warm/90 disabled:opacity-60"
+        </Button>
+        <Button
+          size="sm"
           :disabled="creating"
           @click="confirmCreate"
         >
           {{ creating ? '创建中...' : '创建' }}
-        </button>
-      </div>
-    </template>
-  </el-dialog>
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>

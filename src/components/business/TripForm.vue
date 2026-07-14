@@ -1,7 +1,27 @@
 <script setup lang="ts">
-import { ref, reactive, computed, watch } from 'vue'
-import { ElMessage } from 'element-plus'
-import type { FormInstance, FormRules } from 'element-plus'
+import { computed, watch } from 'vue'
+import { useForm } from 'vee-validate'
+import { toTypedSchema } from '@vee-validate/zod'
+import * as z from 'zod'
+import { toast } from 'vue-sonner'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
+import { DatePicker } from '@/components/ui/date-picker'
 import type { Trip } from '@/types'
 
 /**
@@ -43,37 +63,27 @@ const emit = defineEmits<{
 const isEdit = computed(() => !!props.trip)
 const title = computed(() => (isEdit.value ? '编辑行程' : '新建行程'))
 
-interface FormState {
-  name: string
-  dateRange: [string, string] | null
-}
+// ---- zod schema ----
+const schema = toTypedSchema(
+  z.object({
+    name: z
+      .string({ required_error: '请输入行程名称' })
+      .min(1, '请输入行程名称')
+      .max(100, '名称不超过 100 字'),
+    dateRange: z
+      .array(z.string())
+      .length(2, '请选择行程日期范围')
+      .or(z.null()),
+  }),
+)
 
-const form = reactive<FormState>({
-  name: '',
-  dateRange: null,
+const { handleSubmit, setFieldValue, setValues, resetForm } = useForm({
+  validationSchema: schema,
+  initialValues: {
+    name: '',
+    dateRange: null as [string, string] | null,
+  },
 })
-
-const formRef = ref<FormInstance | null>(null)
-
-const rules: FormRules<FormState> = {
-  name: [
-    { required: true, message: '请输入行程名称', trigger: 'blur' },
-    { max: 100, message: '名称不超过 100 字', trigger: 'blur' },
-  ],
-  dateRange: [
-    {
-      required: true,
-      validator: (_rule, value, callback) => {
-        if (!value || value.length !== 2 || !value[0] || !value[1]) {
-          callback(new Error('请选择行程日期范围'))
-        } else {
-          callback()
-        }
-      },
-      trigger: 'change',
-    },
-  ],
-}
 
 // 打开对话框时初始化表单
 watch(
@@ -81,21 +91,29 @@ watch(
   (val) => {
     if (val) {
       if (props.trip) {
-        form.name = props.trip.name
         if (props.trip.startDate && props.trip.endDate) {
-          form.dateRange = [props.trip.startDate, props.trip.endDate]
+          setValues({
+            name: props.trip.name,
+            dateRange: [props.trip.startDate, props.trip.endDate],
+          })
         } else {
           // 行程必有日期范围，兜底用 startDate 占位
-          form.dateRange = [
-            props.trip.startDate,
-            props.trip.endDate ?? props.trip.startDate,
-          ]
+          setValues({
+            name: props.trip.name,
+            dateRange: [
+              props.trip.startDate,
+              props.trip.endDate ?? props.trip.startDate,
+            ],
+          })
         }
       } else {
-        form.name = ''
-        form.dateRange = null
+        resetForm({
+          values: {
+            name: '',
+            dateRange: null,
+          },
+        })
       }
-      formRef.value?.clearValidate()
     }
   },
 )
@@ -109,83 +127,89 @@ function handleCancel(): void {
   close()
 }
 
-async function handleSubmit(): Promise<void> {
-  if (!formRef.value) return
-  try {
-    await formRef.value.validate()
-  } catch {
-    return
-  }
-  if (!form.dateRange || form.dateRange.length !== 2) {
-    ElMessage.warning('请选择行程日期范围')
+const onSubmit = handleSubmit((values) => {
+  const range = values.dateRange
+  if (!range || range.length !== 2 || !range[0] || !range[1]) {
+    toast.warning('请选择行程日期范围')
     return
   }
   emit('submit', {
-    name: form.name.trim(),
-    startDate: form.dateRange[0],
-    endDate: form.dateRange[1],
+    name: values.name.trim(),
+    startDate: range[0],
+    endDate: range[1],
   })
+})
+
+// DatePicker range 模式回传 [string, string] | null（包装器 emit 类型为 string | [string, string] | null）
+function handleDateRangeChange(
+  value: string | [string, string] | null,
+): void {
+  if (typeof value === 'string') return
+  setFieldValue('dateRange', value)
 }
 </script>
 
 <template>
-  <el-dialog
-    :model-value="visible"
-    :title="title"
-    width="420px"
-    append-to-body
-    :close-on-click-modal="false"
-    @update:model-value="(v: boolean) => emit('update:visible', v)"
+  <Dialog
+    :open="visible"
+    @update:open="(v) => emit('update:visible', v)"
   >
-    <el-form
-      ref="formRef"
-      :model="form"
-      :rules="rules"
-      label-position="top"
-      class="trip-form"
-    >
-      <el-form-item label="行程名称" prop="name" required>
-        <el-input
-          v-model="form.name"
-          placeholder="如：2024 春节江浙行"
-          maxlength="100"
-          show-word-limit
-          clearable
-        />
-      </el-form-item>
+    <DialogContent class="max-w-[420px]">
+      <DialogHeader>
+        <DialogTitle>{{ title }}</DialogTitle>
+        <DialogDescription class="sr-only">
+          {{ title }}
+        </DialogDescription>
+      </DialogHeader>
 
-      <el-form-item label="日期范围" prop="dateRange" required>
-        <el-date-picker
-          v-model="form.dateRange"
-          type="daterange"
-          range-separator="—"
-          start-placeholder="开始日期"
-          end-placeholder="结束日期"
-          value-format="YYYY-MM-DD"
-          class="w-full"
-        />
-      </el-form-item>
-    </el-form>
+      <form class="space-y-4" @submit="onSubmit">
+        <FormField v-slot="{ componentField }" name="name">
+          <FormItem>
+            <FormLabel>行程名称</FormLabel>
+            <FormControl>
+              <Input
+                placeholder="如：2024 春节江浙行"
+                maxlength="100"
+                v-bind="componentField"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
 
-    <template #footer>
-      <div class="flex justify-end gap-2">
-        <button
-          type="button"
-          class="rounded-md border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-60"
+        <FormField v-slot="{ value }" name="dateRange">
+          <FormItem>
+            <FormLabel>日期范围</FormLabel>
+            <FormControl>
+              <DatePicker
+                :model-value="(value as [string, string] | null) ?? null"
+                range
+                class="w-full"
+                @update:model-value="handleDateRangeChange"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
+      </form>
+
+      <DialogFooter>
+        <Button
+          variant="outline"
+          size="sm"
           :disabled="loading"
           @click="handleCancel"
         >
           取消
-        </button>
-        <button
-          type="button"
-          class="rounded-md bg-warm px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-warm/90 disabled:cursor-not-allowed disabled:opacity-60"
+        </Button>
+        <Button
+          size="sm"
           :disabled="loading"
-          @click="handleSubmit"
+          @click="onSubmit"
         >
           {{ loading ? '提交中...' : isEdit ? '保存' : '创建' }}
-        </button>
-      </div>
-    </template>
-  </el-dialog>
+        </Button>
+      </DialogFooter>
+    </DialogContent>
+  </Dialog>
 </template>

@@ -1,43 +1,54 @@
 <script setup lang="ts">
-import { reactive, ref } from 'vue'
 import { useRouter, useRoute } from 'vue-router'
-import { ElMessage } from 'element-plus'
-import type { FormInstance, FormRules } from 'element-plus'
+import { useForm } from 'vee-validate'
+import { toTypedSchema } from '@vee-validate/zod'
+import * as z from 'zod'
+import { toast } from 'vue-sonner'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import {
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from '@/components/ui/form'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
 const route = useRoute()
 const authStore = useAuthStore()
 
-const formRef = ref<FormInstance>()
-const form = reactive({
-  email: '',
-  password: '',
+const schema = toTypedSchema(
+  z.object({
+    email: z
+      .string({ required_error: '请输入邮箱' })
+      .min(1, '请输入邮箱')
+      .email('请输入正确的邮箱格式'),
+    password: z
+      .string({ required_error: '请输入密码' })
+      .min(1, '请输入密码')
+      .min(6, '密码至少 6 位'),
+  }),
+)
+
+const { handleSubmit } = useForm({
+  validationSchema: schema,
+  initialValues: {
+    email: '',
+    password: '',
+  },
 })
 
-const rules: FormRules = {
-  email: [
-    { required: true, message: '请输入邮箱', trigger: 'blur' },
-    { type: 'email', message: '请输入正确的邮箱格式', trigger: 'blur' },
-  ],
-  password: [
-    { required: true, message: '请输入密码', trigger: 'blur' },
-    { min: 6, message: '密码至少 6 位', trigger: 'blur' },
-  ],
-}
-
-function handleSubmit() {
-  formRef.value?.validate(async (valid) => {
-    if (!valid) return
-    try {
-      await authStore.login(form.email, form.password)
-      const redirect = (route.query.redirect as string) || '/'
-      router.push(redirect)
-    } catch (e) {
-      ElMessage.error(e instanceof Error ? e.message : '登录失败')
-    }
-  })
-}
+const onSubmit = handleSubmit(async (values) => {
+  try {
+    await authStore.login(values.email, values.password)
+    const redirect = (route.query.redirect as string) || '/'
+    router.push(redirect)
+  } catch (e) {
+    toast.error(e instanceof Error ? e.message : '登录失败')
+  }
+})
 </script>
 
 <template>
@@ -45,42 +56,41 @@ function handleSubmit() {
     <div class="auth-card">
       <h1 class="auth-title">登录</h1>
       <p class="auth-subtitle">登录后开始记录你的旅行足迹</p>
-      <el-form
-        ref="formRef"
-        :model="form"
-        :rules="rules"
-        label-position="top"
-        @submit.prevent="handleSubmit"
-      >
-        <el-form-item label="邮箱" prop="email">
-          <el-input
-            v-model="form.email"
-            type="email"
-            placeholder="请输入邮箱"
-            size="large"
-          />
-        </el-form-item>
-        <el-form-item label="密码" prop="password">
-          <el-input
-            v-model="form.password"
-            type="password"
-            placeholder="请输入密码"
-            size="large"
-            show-password
-            @keyup.enter="handleSubmit"
-          />
-        </el-form-item>
-        <el-form-item>
-          <el-button
-            type="primary"
-            class="auth-button"
-            :loading="authStore.loading"
-            @click="handleSubmit"
-          >
-            登录
-          </el-button>
-        </el-form-item>
-      </el-form>
+      <form class="auth-form" @submit="onSubmit">
+        <FormField v-slot="{ componentField }" name="email">
+          <FormItem>
+            <FormLabel>邮箱</FormLabel>
+            <FormControl>
+              <Input
+                type="email"
+                placeholder="请输入邮箱"
+                v-bind="componentField"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
+        <FormField v-slot="{ componentField }" name="password">
+          <FormItem>
+            <FormLabel>密码</FormLabel>
+            <FormControl>
+              <Input
+                type="password"
+                placeholder="请输入密码"
+                v-bind="componentField"
+              />
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        </FormField>
+        <Button
+          type="submit"
+          class="w-full"
+          :disabled="authStore.loading"
+        >
+          {{ authStore.loading ? '登录中…' : '登录' }}
+        </Button>
+      </form>
       <p class="auth-footer">
         没有账号？<router-link to="/register">去注册</router-link>
       </p>
@@ -120,16 +130,10 @@ function handleSubmit() {
   margin: 0 0 1.5rem;
 }
 
-.auth-button {
-  width: 100%;
-  --el-button-bg-color: #ff6b35;
-  --el-button-border-color: #ff6b35;
-  --el-button-hover-bg-color: #ff8559;
-  --el-button-hover-border-color: #ff8559;
-  --el-button-active-bg-color: #e85a28;
-  --el-button-active-border-color: #e85a28;
-  --el-button-disabled-bg-color: #ffb39a;
-  --el-button-disabled-border-color: #ffb39a;
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .auth-footer {
@@ -140,7 +144,7 @@ function handleSubmit() {
 }
 
 .auth-footer a {
-  color: #ff6b35;
+  color: hsl(var(--primary));
   text-decoration: none;
 }
 

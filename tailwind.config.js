@@ -1,23 +1,124 @@
+import tailwindcssAnimate from 'tailwindcss-animate'
+
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: ['class'],
   content: ['src/**/*.{vue,ts}'],
-  // 关闭 preflight 避免与 Element Plus 基础样式冲突
-  corePlugins: {
-    preflight: false,
-  },
   theme: {
+    container: {
+      center: true,
+      padding: '2rem',
+      screens: {
+        '2xl': '1400px',
+      },
+    },
     extend: {
       colors: {
-        // 已点亮城市主色 - 暖橙
+        // shadcn-vue semantic tokens (HSL channels, see src/style.css).
+        // Opacity modifiers (e.g. bg-primary/90) are supported via <alpha-value>.
+        border: 'hsl(var(--border) / <alpha-value>)',
+        input: 'hsl(var(--input) / <alpha-value>)',
+        ring: 'hsl(var(--ring) / <alpha-value>)',
+        background: 'hsl(var(--background) / <alpha-value>)',
+        foreground: 'hsl(var(--foreground) / <alpha-value>)',
+        primary: {
+          DEFAULT: 'hsl(var(--primary) / <alpha-value>)',
+          foreground: 'hsl(var(--primary-foreground) / <alpha-value>)',
+        },
+        secondary: {
+          DEFAULT: 'hsl(var(--secondary) / <alpha-value>)',
+          foreground: 'hsl(var(--secondary-foreground) / <alpha-value>)',
+        },
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive) / <alpha-value>)',
+          foreground: 'hsl(var(--destructive-foreground) / <alpha-value>)',
+        },
+        success: {
+          DEFAULT: 'hsl(var(--success) / <alpha-value>)',
+          foreground: 'hsl(var(--success-foreground) / <alpha-value>)',
+        },
+        muted: {
+          DEFAULT: 'hsl(var(--muted) / <alpha-value>)',
+          foreground: 'hsl(var(--muted-foreground) / <alpha-value>)',
+        },
+        accent: {
+          DEFAULT: 'hsl(var(--accent) / <alpha-value>)',
+          foreground: 'hsl(var(--accent-foreground) / <alpha-value>)',
+        },
+        popover: {
+          DEFAULT: 'hsl(var(--popover) / <alpha-value>)',
+          foreground: 'hsl(var(--popover-foreground) / <alpha-value>)',
+        },
+        card: {
+          DEFAULT: 'hsl(var(--card) / <alpha-value>)',
+          foreground: 'hsl(var(--card-foreground) / <alpha-value>)',
+        },
+        chart: {
+          1: 'hsl(var(--chart-1) / <alpha-value>)',
+          2: 'hsl(var(--chart-2) / <alpha-value>)',
+          3: 'hsl(var(--chart-3) / <alpha-value>)',
+          4: 'hsl(var(--chart-4) / <alpha-value>)',
+          5: 'hsl(var(--chart-5) / <alpha-value>)',
+        },
+        sidebar: {
+          DEFAULT: 'hsl(var(--sidebar) / <alpha-value>)',
+          foreground: 'hsl(var(--sidebar-foreground) / <alpha-value>)',
+          primary: 'hsl(var(--sidebar-primary) / <alpha-value>)',
+          'primary-foreground': 'hsl(var(--sidebar-primary-foreground) / <alpha-value>)',
+          accent: 'hsl(var(--sidebar-accent) / <alpha-value>)',
+          'accent-foreground': 'hsl(var(--sidebar-accent-foreground) / <alpha-value>)',
+          border: 'hsl(var(--sidebar-border) / <alpha-value>)',
+          ring: 'hsl(var(--sidebar-ring) / <alpha-value>)',
+        },
+        // brand (zinc) scale — exposed for fine-grained use
+        brand: {
+          50: 'hsl(var(--brand-50) / <alpha-value>)',
+          100: 'hsl(var(--brand-100) / <alpha-value>)',
+          200: 'hsl(var(--brand-200) / <alpha-value>)',
+          300: 'hsl(var(--brand-300) / <alpha-value>)',
+          400: 'hsl(var(--brand-400) / <alpha-value>)',
+          500: 'hsl(var(--brand-500) / <alpha-value>)',
+          600: 'hsl(var(--brand-600) / <alpha-value>)',
+          700: 'hsl(var(--brand-700) / <alpha-value>)',
+          800: 'hsl(var(--brand-800) / <alpha-value>)',
+          900: 'hsl(var(--brand-900) / <alpha-value>)',
+        },
+
+        // ── Map data-point colors (ECharts / map markers only, NOT UI chrome).
+        //    Kept as direct hex so existing bg-warm / text-cool utilities and
+        //    opacity modifiers (bg-warm/90) keep working during migration.
         warm: '#FF6B35',
-        // 居住地城市标识色 - 冷蓝
         cool: '#3B82F6',
-        // 未点亮城市/省份色块 - 淡灰
         ash: '#E2E8F0',
-        // 页面背景 - 纯白
         pure: '#FFFFFF',
+      },
+      borderRadius: {
+        sm: 'var(--radius-sm)',
+        DEFAULT: 'var(--radius)',
+        md: 'var(--radius-md)',
+        lg: 'var(--radius-lg)',
+        xl: 'calc(var(--radius) + 4px)',
+      },
+      fontFamily: {
+        sans: ['Geist', 'ui-sans-serif', 'sans-serif', 'system-ui'],
+        serif: ['"DM Serif Display"', 'ui-serif', 'serif'],
+        mono: ['"Geist Mono"', 'ui-monospace', 'monospace'],
+      },
+      boxShadow: {
+        '2xs': 'var(--shadow-2xs)',
+        xs: 'var(--shadow-xs)',
+        sm: 'var(--shadow-sm)',
+        DEFAULT: 'var(--shadow)',
+        md: 'var(--shadow-md)',
+        lg: 'var(--shadow-lg)',
+        xl: 'var(--shadow-xl)',
+        '2xl': 'var(--shadow-2xl)',
+      },
+      letterSpacing: {
+        tight: 'var(--tracking-tight)',
+        normal: 'var(--tracking-normal)',
       },
     },
   },
-  plugins: [],
+  plugins: [tailwindcssAnimate],
 }

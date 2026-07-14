@@ -1,12 +1,19 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import AppNavbar from './AppNavbar.vue'
+import { Button } from '@/components/ui/button'
+import {
+  Sheet,
+  SheetContent,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import { BookOpen, Menu } from '@lucide/vue'
 
 /**
  * MapLayout - 地图页主布局
  *
- * 桌面：顶部 56px navbar + 下方横向三栏（左 280px / 中 flex-1 / 右 320px）
- * 移动端：左右侧折叠为 el-drawer 抽屉，中地图全屏
+ * 桌面：横向三栏（左 280px / 中 flex-1 / 右 320px）
+ * 移动端：左右侧折叠为 Sheet 抽屉，中地图全屏
+ * AppNavbar 由 App.vue 全局提供，不在此组件内
  */
 
 const leftDrawer = ref(false)
@@ -14,10 +21,7 @@ const rightDrawer = ref(false)
 </script>
 
 <template>
-  <div class="flex h-screen flex-col overflow-hidden bg-white">
-    <!-- 顶部导航栏 -->
-    <AppNavbar />
-
+  <div class="flex h-full flex-col overflow-hidden bg-white">
     <!-- 主体三栏 -->
     <div class="flex flex-1 overflow-hidden">
       <!-- 左侧信息区（桌面） -->
@@ -31,45 +35,26 @@ const rightDrawer = ref(false)
       <main class="relative flex-1 overflow-hidden">
         <!-- 移动端左右抽屉触发按钮 -->
         <div class="absolute left-3 top-3 z-20 flex gap-2 lg:hidden">
-          <button
-            type="button"
-            class="flex h-9 w-9 items-center justify-center rounded-lg bg-white/90 text-slate-600 shadow-sm ring-1 ring-slate-200 transition-colors hover:text-warm"
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            class="rounded-lg bg-white/90 text-slate-600 shadow-sm ring-1 ring-slate-200 hover:bg-white/90 hover:text-primary"
             title="城市列表"
             @click="leftDrawer = true"
           >
-            <svg
-              class="h-5 w-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M3 6h18M3 12h18M3 18h18" />
-            </svg>
-          </button>
+            <Menu class="h-5 w-5" />
+          </Button>
         </div>
         <div class="absolute right-3 top-3 z-20 lg:hidden">
-          <button
-            type="button"
-            class="flex h-9 w-9 items-center justify-center rounded-lg bg-white/90 text-slate-600 shadow-sm ring-1 ring-slate-200 transition-colors hover:text-warm"
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            class="rounded-lg bg-white/90 text-slate-600 shadow-sm ring-1 ring-slate-200 hover:bg-white/90 hover:text-primary"
             title="详情"
             @click="rightDrawer = true"
           >
-            <svg
-              class="h-5 w-5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
-              <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-            </svg>
-          </button>
+            <BookOpen class="h-5 w-5" />
+          </Button>
         </div>
 
         <slot />
@@ -84,27 +69,23 @@ const rightDrawer = ref(false)
     </div>
 
     <!-- 移动端左侧抽屉 -->
-    <el-drawer
-      v-model="leftDrawer"
-      direction="ltr"
-      size="300px"
-      :with-header="false"
-    >
-      <div class="h-full overflow-y-auto">
-        <slot name="left" />
-      </div>
-    </el-drawer>
+    <Sheet v-model:open="leftDrawer">
+      <SheetContent side="left" class="w-[300px] p-0 sm:max-w-[300px]">
+        <SheetTitle class="sr-only">城市列表</SheetTitle>
+        <div class="h-full overflow-y-auto">
+          <slot name="left" />
+        </div>
+      </SheetContent>
+    </Sheet>
 
     <!-- 移动端右侧抽屉 -->
-    <el-drawer
-      v-model="rightDrawer"
-      direction="rtl"
-      size="340px"
-      :with-header="false"
-    >
-      <div class="h-full overflow-y-auto">
-        <slot name="right" />
-      </div>
-    </el-drawer>
+    <Sheet v-model:open="rightDrawer">
+      <SheetContent side="right" class="w-[340px] p-0 sm:max-w-[340px]">
+        <SheetTitle class="sr-only">详情</SheetTitle>
+        <div class="h-full overflow-y-auto">
+          <slot name="right" />
+        </div>
+      </SheetContent>
+    </Sheet>
   </div>
 </template>

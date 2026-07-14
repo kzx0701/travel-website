@@ -1,7 +1,6 @@
 import { defineStore } from 'pinia'
 import { ref, computed } from 'vue'
 import { supabase } from '@/api/supabase'
-import { generateAvatarSeed } from '@/utils/avatar'
 import router from '@/router'
 import type { User } from '@/types'
 
@@ -75,36 +74,22 @@ export const useAuthStore = defineStore('auth', () => {
     })
   }
 
-  /** 注册：signUp 后自动登录并创建 profile */
+  /** 注册：signUp 即自动登录（关闭邮箱确认后 signUp 直接返回 session，profile 由 DB trigger 自动创建） */
   async function register(email: string, password: string) {
     loading.value = true
     error.value = null
     try {
-      const { error: signUpError } = await supabase.auth.signUp({
+      const { data, error: signUpError } = await supabase.auth.signUp({
         email,
         password,
       })
       if (signUpError) throw signUpError
 
-      // 自动登录（不强制邮箱确认）
-      const { data, error: signInError } =
-        await supabase.auth.signInWithPassword({ email, password })
-      if (signInError) throw signInError
-
-      if (data.user) {
-        // 创建 profile
-        const { error: profileError } = await supabase
-          .from('profiles')
-          .insert({
-            id: data.user.id,
-            email,
-            display_name: email.split('@')[0] ?? email,
-            avatar_seed: generateAvatarSeed(),
-          })
-        if (profileError) throw profileError
-
-        const profile = await fetchProfile(data.user.id)
-        user.value = mapUser(data.user, profile)
+      // 关闭 Confirm email 后 signUp 直接返回 session，无需再 signIn
+      // profile 与 profile_settings 由 handle_new_user trigger 自动创建
+      if (data.session?.user) {
+        const profile = await fetchProfile(data.session.user.id)
+        user.value = mapUser(data.session.user, profile)
       }
     } catch (e) {
       error.value = e instanceof Error ? e.message : String(e)

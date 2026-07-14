@@ -23,7 +23,7 @@ withDefaults(
     <div class="flex items-center gap-1">
       <span
         v-if="icon"
-        class="text-xs leading-none text-warm"
+        class="text-xs leading-none text-primary"
         v-html="icon"
       />
       <span

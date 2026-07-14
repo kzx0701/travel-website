@@ -77,7 +77,7 @@ function handleNavigate(crumb: Crumb): void {
       <button
         v-else
         type="button"
-        class="cursor-pointer rounded px-1 text-gray-500 transition-colors hover:text-warm"
+        class="cursor-pointer rounded px-1 text-gray-500 transition-colors hover:text-primary"
         @click="handleNavigate(crumb)"
       >
         {{ crumb.label }}

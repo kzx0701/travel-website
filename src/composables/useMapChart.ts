@@ -313,8 +313,8 @@ export function useMapChart(
       const mapName = await registerMapForLevel(level, regionCode)
       mapAvailable.value = !!mapName
       const option = buildOption(mapName)
-      // notMerge: false 平滑过渡，避免切换时突兀
-      chart.value.setOption(option, { notMerge: false })
+      // notMerge: true 完全替换，避免 geo/cartesian2d 降级切换时配置残留
+      chart.value.setOption(option, { notMerge: true })
       // 缓存 zoom 用于按钮控制
       const opt = chart.value.getOption() as { geo?: Array<{ zoom?: number }> }
       const zoom = opt?.geo?.[0]?.zoom
@@ -329,13 +329,15 @@ export function useMapChart(
 
   /**
    * 仅更新数据（不重新注册地图，适用于 litCities 等变化）
+   * GeoJSON 缺失时与 renderChart 保持一致，使用降级渲染
    */
   function updateData(): void {
     if (!chart.value) return
-    const { level } = params.value
-    const mapName = getMapName(level, params.value.regionCode)
+    const mapName = mapAvailable.value
+      ? getMapName(params.value.level, params.value.regionCode)
+      : null
     const option = buildOption(mapName)
-    chart.value.setOption(option, { notMerge: false })
+    chart.value.setOption(option, { notMerge: true })
   }
 
   /**

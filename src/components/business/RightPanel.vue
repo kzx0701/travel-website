@@ -1,10 +1,12 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessage } from 'element-plus'
+import { toast } from 'vue-sonner'
+import { ChevronRight, MapPin, Plus } from '@lucide/vue'
 import MapBreadcrumb from './MapBreadcrumb.vue'
 import RecordList from './RecordList.vue'
 import RecordForm from './RecordForm.vue'
+import { Button } from '@/components/ui/button'
 import { useMapStore } from '@/stores/map'
 import { useVisitRecordStore } from '@/stores/visitRecord'
 import { useResidenceStore } from '@/stores/residence'
@@ -83,11 +85,11 @@ function switchToEditMode(record: VisitRecord): void {
 // ---- default / detail 态的添加按钮 ----
 function handleAddRecord(): void {
   if (!mapStore.selectedCity) {
-    ElMessage.info('请先在地图上选择一个城市')
+    toast('请先在地图上选择一个城市')
     return
   }
   if (isResidenceCity.value) {
-    ElMessage.info('居住地所在城市无需点亮')
+    toast('居住地所在城市无需点亮')
     return
   }
   switchToCreateMode()
@@ -107,10 +109,10 @@ async function handleFormSubmit(data: VisitRecordInput): Promise<void> {
   try {
     if (isEditing && editingRecord.value) {
       await visitRecordStore.update(editingRecord.value.id, data)
-      ElMessage.success('记录已更新')
+      toast.success('记录已更新')
     } else {
       await visitRecordStore.create(data)
-      ElMessage.success(wasFirstRecord ? '已点亮城市' : '记录已添加')
+      toast.success(wasFirstRecord ? '已点亮城市' : '记录已添加')
     }
     // 切回详情态
     mapStore.rightPanelMode = 'detail'
@@ -120,7 +122,7 @@ async function handleFormSubmit(data: VisitRecordInput): Promise<void> {
       await purposeStore.loadAll()
     }
   } catch (e) {
-    ElMessage.error(isEditing ? '更新失败' : '添加失败')
+    toast.error(isEditing ? '更新失败' : '添加失败')
     console.error(e)
   }
 }
@@ -138,11 +140,11 @@ async function handleRecordDelete(record: VisitRecord): Promise<void> {
     cityCode !== '' && (visitRecordStore.cityVisitCount[cityCode] ?? 0) <= 1
   try {
     await visitRecordStore.remove(record.id)
-    ElMessage.success(
+    toast.success(
       wasLast ? '已删除记录，该城市已无到达记录，已取消点亮' : '已删除记录',
     )
   } catch (e) {
-    ElMessage.error('删除失败')
+    toast.error('删除失败')
     console.error(e)
   }
 }
@@ -170,20 +172,9 @@ function handleRecordEdit(record: VisitRecord): void {
       class="flex flex-1 flex-col items-center justify-center px-8 text-center"
     >
       <div
-        class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-warm/5"
+        class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted"
       >
-        <svg
-          class="h-7 w-7 text-warm/60"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="1.5"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M9 11.24V7.5a2.5 2.5 0 0 1 5 0v3.74" />
-          <path d="M14 11.24V7.5a2.5 2.5 0 0 0-5 0v3.74a4 4 0 1 0 5 0Z" />
-        </svg>
+        <MapPin class="h-7 w-7 text-muted-foreground/60" />
       </div>
       <p class="text-sm font-medium text-slate-600">
         点击地图上的城市查看详情
@@ -193,66 +184,31 @@ function handleRecordEdit(record: VisitRecord): void {
 
     <!-- 常驻添加记录按钮 -->
     <div class="shrink-0 px-4 pb-3">
-      <button
-        type="button"
-        class="flex w-full items-center justify-center gap-1.5 rounded-lg bg-warm py-2.5 text-sm font-semibold text-white transition-colors hover:bg-warm/90"
-        @click="handleAddRecord"
-      >
-        <svg
-          class="h-4 w-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M12 5v14M5 12h14" />
-        </svg>
+      <Button class="w-full" @click="handleAddRecord">
+        <Plus class="h-4 w-4" />
         添加到达记录
-      </button>
+      </Button>
       <p v-if="!mapStore.selectedCity" class="mt-1.5 text-center text-xs text-slate-400">
         请先选择城市
       </p>
     </div>
 
     <!-- 未设置居住地引导提示 -->
-    <button
+    <Button
       v-if="hasNoResidence"
-      type="button"
-      class="mb-4 mx-4 flex w-auto items-center gap-3 rounded-lg border border-cool/20 bg-cool/5 px-4 py-3 text-left transition-colors hover:border-cool/40 hover:bg-cool/10"
+      variant="outline"
+      class="mb-4 mx-4 flex h-auto items-center gap-3 px-4 py-3 text-left"
       @click="handleGotoSettings"
     >
-      <svg
-        class="h-5 w-5 shrink-0 text-cool"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-        <circle cx="12" cy="10" r="3" />
-      </svg>
+      <MapPin class="h-5 w-5 shrink-0 text-primary" />
       <div class="min-w-0 flex-1">
-        <p class="text-sm font-medium text-cool">未设置居住地</p>
-        <p class="mt-0.5 text-xs text-cool/70">
+        <p class="text-sm font-medium text-primary">未设置居住地</p>
+        <p class="mt-0.5 text-xs text-muted-foreground">
           前往设置，居住地所在城市将不被点亮
         </p>
       </div>
-      <svg
-        class="h-4 w-4 shrink-0 text-cool/60"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-      >
-        <path d="m9 18 6-6-6-6" />
-      </svg>
-    </button>
+      <ChevronRight class="h-4 w-4 shrink-0 text-muted-foreground/60" />
+    </Button>
   </div>
 
   <!-- 城市详情态 -->
@@ -272,13 +228,13 @@ function handleRecordEdit(record: VisitRecord): void {
         </div>
         <span
           v-if="isResidenceCity"
-          class="inline-flex h-7 items-center rounded-full bg-cool/10 px-3 text-sm font-bold text-cool"
+          class="inline-flex h-7 items-center rounded-full bg-secondary px-3 text-sm font-bold text-secondary-foreground"
         >
           居住地
         </span>
         <span
           v-else
-          class="inline-flex h-7 items-center rounded-full bg-warm/10 px-3 text-sm font-bold text-warm tabular-nums"
+          class="inline-flex h-7 items-center rounded-full bg-secondary px-3 text-sm font-bold text-secondary-foreground tabular-nums"
         >
           {{ selectedCityCount }} 次
         </span>
@@ -287,31 +243,20 @@ function handleRecordEdit(record: VisitRecord): void {
       <!-- 居住地提示（不可点亮） -->
       <div
         v-if="isResidenceCity"
-        class="mt-3 rounded-lg bg-cool/5 px-3 py-2.5 text-xs text-cool"
+        class="mt-3 rounded-lg bg-muted px-3 py-2.5 text-xs text-muted-foreground"
       >
         这是你的居住地所在城市，无需点亮
       </div>
 
       <!-- 非居住地才显示添加按钮 -->
-      <button
+      <Button
         v-else
-        type="button"
-        class="mt-3 flex w-full items-center justify-center gap-1.5 rounded-lg bg-warm py-2 text-sm font-medium text-white transition-colors hover:bg-warm/90"
+        class="mt-3 w-full"
         @click="switchToCreateMode"
       >
-        <svg
-          class="h-4 w-4"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M12 5v14M5 12h14" />
-        </svg>
+        <Plus class="h-4 w-4" />
         添加到达记录
-      </button>
+      </Button>
     </div>
 
     <!-- 记录列表 -->
@@ -349,13 +294,14 @@ function handleRecordEdit(record: VisitRecord): void {
       class="flex flex-1 flex-col items-center justify-center px-8 text-center"
     >
       <p class="text-sm text-slate-400">请先选择城市</p>
-      <button
-        type="button"
-        class="mt-3 rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-600 transition-colors hover:bg-slate-50"
+      <Button
+        variant="outline"
+        size="sm"
+        class="mt-3"
         @click="handleBackToDetail"
       >
         返回
-      </button>
+      </Button>
     </div>
   </div>
 </template>

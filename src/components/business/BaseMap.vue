@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
+import { Button } from '@/components/ui/button'
 import type { City, MapLevel } from '@/types'
 import { useMapChart, type UseMapChartCallbacks } from '@/composables/useMapChart'
 import { provinces } from '@/data/cities'
@@ -109,8 +110,8 @@ watch(
       v-if="loading"
       class="absolute inset-0 z-10 flex items-center justify-center bg-white/70 backdrop-blur-sm"
     >
-      <div class="flex flex-col items-center gap-3 text-warm">
-        <div class="h-8 w-8 animate-spin rounded-full border-2 border-warm border-t-transparent" />
+      <div class="flex flex-col items-center gap-3 text-primary">
+        <div class="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
         <span class="text-sm text-gray-500">地图加载中…</span>
       </div>
     </div>
@@ -127,25 +128,27 @@ watch(
     <!-- 缩放控制按钮组 -->
     <div
       v-if="!readonly"
-      class="absolute right-3 top-3 z-10 flex flex-col gap-1.5 rounded-md bg-white/90 shadow-sm ring-1 ring-gray-200"
+      class="absolute right-3 top-3 z-10 flex flex-col gap-1.5 rounded-md bg-white/90 p-0.5 shadow-sm ring-1 ring-gray-200"
     >
-      <button
-        type="button"
-        class="flex h-8 w-8 items-center justify-center text-lg text-gray-600 transition-colors hover:bg-gray-50 hover:text-warm"
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        class="size-8 rounded text-lg text-gray-600 hover:text-primary"
         title="放大"
         @click="zoomIn"
       >
         +
-      </button>
+      </Button>
       <div class="mx-1 h-px bg-gray-200" />
-      <button
-        type="button"
-        class="flex h-8 w-8 items-center justify-center text-lg text-gray-600 transition-colors hover:bg-gray-50 hover:text-warm"
+      <Button
+        variant="ghost"
+        size="icon-sm"
+        class="size-8 rounded text-lg text-gray-600 hover:text-primary"
         title="缩小"
         @click="zoomOut"
       >
         −
-      </button>
+      </Button>
     </div>
 
     <!-- 图例 -->

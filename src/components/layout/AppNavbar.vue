@@ -1,6 +1,15 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { ChevronDown, LogOut, MapPin } from '@lucide/vue'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { useAuthStore } from '@/stores/auth'
 import { useResidenceStore } from '@/stores/residence'
 import { getAvatarUrl } from '@/utils/avatar'
@@ -54,42 +63,35 @@ async function handleLogout(): Promise<void> {
     <!-- 左：Logo + 标题 -->
     <div class="flex shrink-0 items-center gap-2">
       <span class="flex h-7 w-7 items-center justify-center">
-        <svg
-          class="h-6 w-6 text-warm"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-        >
-          <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-          <circle cx="12" cy="10" r="3" />
-        </svg>
+        <MapPin class="h-6 w-6 text-warm" />
       </span>
       <span class="hidden text-base font-bold tracking-tight text-slate-800 sm:inline">
         足迹地图
       </span>
     </div>
 
-    <!-- 中：页面切换 tabs（移动端可横向滚动） -->
+    <!-- 中：页面切换 tabs（移动端可横向滚动，shadcn Tabs 风格） -->
     <nav
-      class="flex flex-1 items-center justify-center gap-1 overflow-x-auto sm:flex-none sm:overflow-visible"
+      class="flex flex-1 items-center justify-center overflow-x-auto sm:flex-none sm:overflow-visible"
       aria-label="主导航"
     >
-      <router-link
-        v-for="tab in tabs"
-        :key="tab.name"
-        :to="tab.to"
-        class="inline-flex h-8 shrink-0 items-center justify-center whitespace-nowrap rounded-md px-2.5 text-sm font-semibold transition-colors sm:px-4"
-        :class="
-          activeTab === tab.name
-            ? 'bg-warm text-white'
-            : 'text-slate-500 hover:bg-slate-50 hover:text-slate-700'
-        "
+      <div
+        class="inline-flex h-9 items-center justify-center gap-1 rounded-lg bg-muted/60 p-1 text-muted-foreground"
       >
-        {{ tab.label }}
-      </router-link>
+        <router-link
+          v-for="tab in tabs"
+          :key="tab.name"
+          :to="tab.to"
+          class="inline-flex h-7 shrink-0 items-center justify-center whitespace-nowrap rounded-md px-3 text-sm font-medium transition-all"
+          :class="
+            activeTab === tab.name
+              ? 'bg-background text-foreground shadow-sm'
+              : 'hover:text-foreground'
+          "
+        >
+          {{ tab.label }}
+        </router-link>
+      </div>
     </nav>
 
     <!-- 右：用户信息 -->
@@ -97,56 +99,51 @@ async function handleLogout(): Promise<void> {
       <span v-if="user" class="hidden text-xs text-slate-400 lg:inline">
         {{ user.email }}
       </span>
-      <el-dropdown trigger="click" placement="bottom-end">
-        <div class="flex cursor-pointer items-center gap-2">
-          <img
-            v-if="avatarUrl"
-            :src="avatarUrl"
-            alt="头像"
-            class="h-8 w-8 rounded-full bg-slate-100 ring-1 ring-slate-200"
-          />
-          <div
-            v-else
-            class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600 ring-1 ring-slate-200"
+      <DropdownMenu>
+        <DropdownMenuTrigger as-child>
+          <button
+            type="button"
+            class="flex cursor-pointer items-center gap-2 rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
           >
-            {{ user?.email?.charAt(0)?.toUpperCase() ?? '?' }}
-          </div>
-          <span
+            <img
+              v-if="avatarUrl"
+              :src="avatarUrl"
+              alt="头像"
+              class="h-8 w-8 rounded-full bg-slate-100 ring-1 ring-slate-200"
+            />
+            <div
+              v-else
+              class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600 ring-1 ring-slate-200"
+            >
+              {{ user?.email?.charAt(0)?.toUpperCase() ?? '?' }}
+            </div>
+            <span
+              v-if="residenceLabel"
+              class="hidden items-center gap-1 rounded-full bg-cool/10 px-2 py-0.5 text-xs font-medium text-cool md:inline-flex"
+            >
+              {{ residenceLabel }}
+            </span>
+            <ChevronDown class="h-4 w-4 text-slate-400" />
+          </button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end" class="w-56">
+          <DropdownMenuLabel class="text-xs font-normal text-slate-400">
+            {{ user?.email }}
+          </DropdownMenuLabel>
+          <DropdownMenuLabel
             v-if="residenceLabel"
-            class="hidden items-center gap-1 rounded-full bg-cool/10 px-2 py-0.5 text-xs font-medium text-cool md:inline-flex"
+            class="flex items-center gap-1.5 text-xs font-normal text-slate-400"
           >
-            {{ residenceLabel }}
-          </span>
-          <svg
-            class="h-4 w-4 text-slate-400"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="m6 9 6 6 6-6" />
-          </svg>
-        </div>
-        <template #dropdown>
-          <el-dropdown-menu>
-            <el-dropdown-item disabled>
-              <span class="text-xs text-slate-400">
-                {{ user?.email }}
-              </span>
-            </el-dropdown-item>
-            <el-dropdown-item v-if="residenceLabel" disabled>
-              <span class="text-xs text-slate-400">
-                居住地：{{ residenceLabel }}
-              </span>
-            </el-dropdown-item>
-            <el-dropdown-item divided @click="handleLogout">
-              退出登录
-            </el-dropdown-item>
-          </el-dropdown-menu>
-        </template>
-      </el-dropdown>
+            <MapPin class="h-3 w-3" />
+            居住地：{{ residenceLabel }}
+          </DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem class="cursor-pointer text-destructive focus:text-destructive" @select="handleLogout">
+            <LogOut class="h-4 w-4" />
+            退出登录
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   </header>
 </template>

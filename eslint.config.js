@@ -23,6 +23,14 @@ export default defineConfigWithVueTs(
   pluginVue.configs['flat/essential'],
   vueTsConfigs.recommended,
   {
+    // shadcn-vue UI 组件按约定使用单词命名（Button、Skeleton 等），不受多词命名约束
+    name: 'app/shadcn-ui-overrides',
+    files: ['src/components/ui/**/*.{ts,tsx,vue}'],
+    rules: {
+      'vue/multi-word-component-names': 'off',
+    },
+  },
+  {
     name: 'app/custom-rules',
     rules: {
       // 单文件行数上限提示（警告级，含 .vue 文件）

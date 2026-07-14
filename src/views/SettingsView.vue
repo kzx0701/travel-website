@@ -1,8 +1,21 @@
 <script setup lang="ts">
 import { onMounted, ref, computed, watch } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import AppNavbar from '@/components/layout/AppNavbar.vue'
+import { toast } from 'vue-sonner'
+import { Copy, LogOut, MapPin, Plus, Settings as SettingsIcon, Trash2, User } from '@lucide/vue'
 import ResidenceSelector from '@/components/business/ResidenceSelector.vue'
+import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Skeleton } from '@/components/ui/skeleton'
+import { Switch } from '@/components/ui/switch'
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 import { useResidenceStore } from '@/stores/residence'
 import { useAuthStore } from '@/stores/auth'
 import { usePurposeStore } from '@/stores/purpose'
@@ -38,7 +51,7 @@ onMounted(async () => {
     try {
       await purposeStore.loadAll()
     } catch (e) {
-      ElMessage.error('出行目的加载失败')
+      toast.error('出行目的加载失败')
       console.error(e)
     }
   }
@@ -47,7 +60,7 @@ onMounted(async () => {
     try {
       await profileSettingsStore.load()
     } catch (e) {
-      ElMessage.error('档案设置加载失败')
+      toast.error('档案设置加载失败')
       console.error(e)
     }
   }
@@ -86,16 +99,16 @@ const isDisplayNameDirty = computed(
 async function handleSaveDisplayName(): Promise<void> {
   const name = displayNameDraft.value.trim()
   if (!name) {
-    ElMessage.warning('显示名不能为空')
+    toast.warning('显示名不能为空')
     return
   }
   if (!isDisplayNameDirty.value) return
   displayNameSaving.value = true
   try {
     await authStore.updateDisplayName(name)
-    ElMessage.success('显示名已更新')
+    toast.success('显示名已更新')
   } catch (e) {
-    ElMessage.error(e instanceof Error ? e.message : '保存失败')
+    toast.error(e instanceof Error ? e.message : '保存失败')
   } finally {
     displayNameSaving.value = false
   }
@@ -105,35 +118,45 @@ async function handleLogout(): Promise<void> {
   try {
     await authStore.logout()
   } catch (e) {
-    ElMessage.error('退出失败')
+    toast.error('退出失败')
     console.error(e)
   }
 }
 
 // ---- 出行目的分类管理 ----
-async function handleDeletePurpose(cat: PurposeCategory): Promise<void> {
-  try {
-    await ElMessageBox.confirm(
-      `确定删除自定义分类「${cat.name}」吗？\n使用该分类的到达记录将自动转为"其他"。`,
-      '删除分类',
-      {
-        confirmButtonText: '确认删除',
-        cancelButtonText: '取消',
-        type: 'warning',
-      },
-    )
-  } catch {
-    return // 用户取消
-  }
+// 删除分类二次确认（声明式 ConfirmDialog）
+const deletePurposeVisible = ref(false)
+const pendingDeletePurpose = ref<PurposeCategory | null>(null)
+
+function handleDeletePurpose(cat: PurposeCategory): void {
+  pendingDeletePurpose.value = cat
+  deletePurposeVisible.value = true
+}
+
+async function confirmDeletePurpose(): Promise<void> {
+  const cat = pendingDeletePurpose.value
+  if (!cat) return
   try {
     await purposeStore.removeCustom(cat.id)
     // 刷新到达记录以同步 purpose 字段变更
     await visitRecordStore.loadAll()
-    ElMessage.success('已删除分类')
+    toast.success('已删除分类')
   } catch (e) {
-    ElMessage.error(e instanceof Error ? e.message : '删除失败')
+    toast.error(e instanceof Error ? e.message : '删除失败')
+  } finally {
+    pendingDeletePurpose.value = null
   }
 }
+
+function cancelDeletePurpose(): void {
+  pendingDeletePurpose.value = null
+}
+
+const deletePurposeDescription = computed(() =>
+  pendingDeletePurpose.value
+    ? `确定删除自定义分类「${pendingDeletePurpose.value.name}」吗？\n使用该分类的到达记录将自动转为"其他"。`
+    : '',
+)
 
 // 新建自定义分类
 const newPurposeVisible = ref(false)
@@ -148,20 +171,20 @@ function openNewPurpose(): void {
 async function confirmNewPurpose(): Promise<void> {
   const name = newPurposeName.value.trim()
   if (!name) {
-    ElMessage.warning('请输入分类名称')
+    toast.warning('请输入分类名称')
     return
   }
   if (purposeStore.categories.some((c) => c.name === name)) {
-    ElMessage.warning('该分类已存在')
+    toast.warning('该分类已存在')
     return
   }
   newPurposeSaving.value = true
   try {
     await purposeStore.createCustom(name)
     newPurposeVisible.value = false
-    ElMessage.success('已新建分类')
+    toast.success('已新建分类')
   } catch (e) {
-    ElMessage.error(e instanceof Error ? e.message : '新建失败')
+    toast.error(e instanceof Error ? e.message : '新建失败')
   } finally {
     newPurposeSaving.value = false
   }
@@ -188,67 +211,62 @@ const shareUrl = computed(() =>
     : '',
 )
 
-async function handleVisibilityChange(
-  val: string | number | boolean,
-): Promise<void> {
-  const next = Boolean(val)
+async function handleVisibilityChange(val: boolean): Promise<void> {
+  const next = val
   visibilitySaving.value = true
   try {
     await profileSettingsStore.update({ isPublic: next })
-    ElMessage.success(next ? '已开启公开访问' : '已关闭公开访问')
+    toast.success(next ? '已开启公开访问' : '已关闭公开访问')
   } catch (e) {
-    ElMessage.error(e instanceof Error ? e.message : '更新失败')
+    toast.error(e instanceof Error ? e.message : '更新失败')
   } finally {
     visibilitySaving.value = false
   }
 }
 
-async function handleGenerateToken(): Promise<void> {
+// 重新生成 token 二次确认（声明式 ConfirmDialog）
+const regenerateTokenVisible = ref(false)
+
+function handleGenerateToken(): void {
   // 已有 token 时需二次确认（重新生成会使旧链接失效）
   if (shareToken.value) {
-    try {
-      await ElMessageBox.confirm(
-        '生成新的分享链接后，旧链接将立即失效。确认继续？',
-        '重新生成分享链接',
-        {
-          confirmButtonText: '确认生成',
-          cancelButtonText: '取消',
-          type: 'warning',
-        },
-      )
-    } catch {
-      return
-    }
+    regenerateTokenVisible.value = true
+    return
   }
+  void doRegenerateToken()
+}
+
+async function doRegenerateToken(): Promise<void> {
   tokenSaving.value = true
   try {
     await profileSettingsStore.regenerateToken()
-    ElMessage.success('分享链接已生成')
+    toast.success('分享链接已生成')
   } catch (e) {
-    ElMessage.error(e instanceof Error ? e.message : '生成失败')
+    toast.error(e instanceof Error ? e.message : '生成失败')
   } finally {
     tokenSaving.value = false
   }
+}
+
+function confirmRegenerateToken(): void {
+  void doRegenerateToken()
 }
 
 async function handleCopyLink(): Promise<void> {
   if (!shareUrl.value) return
   try {
     await navigator.clipboard.writeText(shareUrl.value)
-    ElMessage.success('链接已复制')
+    toast.success('链接已复制')
   } catch {
-    ElMessage.error('复制失败，请手动复制')
+    toast.error('复制失败，请手动复制')
   }
 }
 </script>
 
 <template>
-  <div class="flex h-screen flex-col overflow-hidden bg-slate-50">
-    <!-- 顶部导航 -->
-    <AppNavbar />
-
+  <div class="h-full overflow-hidden bg-slate-50">
     <!-- 内容区 -->
-    <main class="flex-1 overflow-y-auto">
+    <main class="h-full overflow-y-auto">
       <div class="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:py-10">
         <!-- 页面标题 -->
         <div class="mb-6">
@@ -266,18 +284,7 @@ async function handleCopyLink(): Promise<void> {
         >
           <div class="border-b border-slate-100 px-6 py-4">
             <div class="flex items-center gap-2">
-              <svg
-                class="h-5 w-5 text-cool"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-                <circle cx="12" cy="10" r="3" />
-              </svg>
+              <MapPin class="h-5 w-5 text-muted-foreground" />
               <h2 class="text-base font-semibold text-slate-800">
                 居住地设置
               </h2>
@@ -290,13 +297,11 @@ async function handleCopyLink(): Promise<void> {
 
           <div class="px-6 py-5">
             <!-- 加载骨架屏 -->
-            <div v-if="residenceStore.loading" class="space-y-3">
-              <div class="h-10 w-full animate-pulse rounded-lg bg-slate-100" />
-              <div class="h-16 w-full animate-pulse rounded-lg bg-slate-100" />
+            <div v-if="residenceStore.loading" class="flex flex-col gap-3">
+              <Skeleton class="h-10 w-full rounded-lg" />
+              <Skeleton class="h-16 w-full rounded-lg" />
               <div class="flex justify-end">
-                <div
-                  class="h-9 w-28 animate-pulse rounded-lg bg-slate-100"
-                />
+                <Skeleton class="h-9 w-28 rounded-lg" />
               </div>
             </div>
 
@@ -314,18 +319,7 @@ async function handleCopyLink(): Promise<void> {
         >
           <div class="border-b border-slate-100 px-6 py-4">
             <div class="flex items-center gap-2">
-              <svg
-                class="h-5 w-5 text-warm"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                <circle cx="12" cy="7" r="4" />
-              </svg>
+              <User class="h-5 w-5 text-primary" />
               <h2 class="text-base font-semibold text-slate-800">账号信息</h2>
             </div>
           </div>
@@ -362,46 +356,29 @@ async function handleCopyLink(): Promise<void> {
                 显示名
               </label>
               <div class="flex gap-2">
-                <el-input
+                <Input
                   v-model="displayNameDraft"
                   placeholder="请输入显示名"
                   maxlength="20"
                   class="flex-1"
                   @keyup.enter="handleSaveDisplayName"
                 />
-                <button
-                  type="button"
-                  class="inline-flex h-9 shrink-0 items-center justify-center rounded-lg bg-warm px-4 text-sm font-medium text-white transition-colors hover:bg-warm/90 disabled:cursor-not-allowed disabled:bg-warm/40"
+                <Button
+                  class="shrink-0"
                   :disabled="!isDisplayNameDirty || displayNameSaving"
                   @click="handleSaveDisplayName"
                 >
                   {{ displayNameSaving ? '保存中…' : '保存' }}
-                </button>
+                </Button>
               </div>
             </div>
 
             <!-- 退出登录 -->
             <div class="border-t border-slate-100 pt-4">
-              <button
-                type="button"
-                class="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg border border-slate-200 px-4 text-sm font-medium text-slate-600 transition-colors hover:border-red-200 hover:bg-red-50 hover:text-red-600"
-                @click="handleLogout"
-              >
-                <svg
-                  class="h-4 w-4"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  stroke-width="2"
-                  stroke-linecap="round"
-                  stroke-linejoin="round"
-                >
-                  <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
-                  <polyline points="16 17 21 12 16 7" />
-                  <line x1="21" y1="12" x2="9" y2="12" />
-                </svg>
+              <Button variant="outline" @click="handleLogout">
+                <LogOut class="h-4 w-4" />
                 退出登录
-              </button>
+              </Button>
             </div>
           </div>
         </section>
@@ -412,20 +389,7 @@ async function handleCopyLink(): Promise<void> {
         >
           <div class="border-b border-slate-100 px-6 py-4">
             <div class="flex items-center gap-2">
-              <svg
-                class="h-5 w-5 text-warm"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-                stroke-linecap="round"
-                stroke-linejoin="round"
-              >
-                <circle cx="12" cy="12" r="3" />
-                <path
-                  d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1Z"
-                />
-              </svg>
+              <SettingsIcon class="h-5 w-5 text-primary" />
               <h2 class="text-base font-semibold text-slate-800">偏好设置</h2>
             </div>
           </div>
@@ -440,32 +404,23 @@ async function handleCopyLink(): Promise<void> {
                     系统预设不可删除，自定义分类删除后关联记录转为"其他"
                   </p>
                 </div>
-                <button
-                  type="button"
-                  class="inline-flex h-8 shrink-0 items-center gap-1 rounded-md bg-warm/5 px-3 text-xs font-medium text-warm transition-colors hover:bg-warm/10"
+                <Button
+                  variant="outline"
+                  size="sm"
+                  class="shrink-0 h-8"
                   @click="openNewPurpose"
                 >
-                  <svg
-                    class="h-3.5 w-3.5"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    stroke-width="2"
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                  >
-                    <path d="M12 5v14M5 12h14" />
-                  </svg>
+                  <Plus class="h-3.5 w-3.5" />
                   新建分类
-                </button>
+                </Button>
               </div>
 
               <!-- 加载骨架屏 -->
-              <div v-if="purposeStore.loading" class="space-y-1.5">
-                <div
+              <div v-if="purposeStore.loading" class="flex flex-col gap-1.5">
+                <Skeleton
                   v-for="i in 4"
                   :key="i"
-                  class="h-10 w-full animate-pulse rounded-lg bg-slate-100"
+                  class="h-10 w-full rounded-lg"
                 />
               </div>
 
@@ -486,36 +441,21 @@ async function handleCopyLink(): Promise<void> {
                     </span>
                     <span
                       v-else
-                      class="rounded-full bg-warm/10 px-1.5 py-0.5 text-[10px] font-medium text-warm"
+                      class="rounded-full bg-secondary px-1.5 py-0.5 text-[10px] font-medium text-secondary-foreground"
                     >
                       自定义
                     </span>
                   </div>
-                  <button
+                  <Button
                     v-if="!cat.isSystem"
-                    type="button"
-                    class="flex h-6 w-6 items-center justify-center rounded text-slate-400 transition-colors hover:bg-red-50 hover:text-red-500"
+                    variant="ghost"
+                    size="icon-sm"
+                    class="size-6 hover:bg-destructive/10 hover:text-destructive"
                     title="删除"
                     @click="handleDeletePurpose(cat)"
                   >
-                    <svg
-                      class="h-3.5 w-3.5"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="M3 6h18" />
-                      <path
-                        d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"
-                      />
-                      <path
-                        d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                      />
-                    </svg>
-                  </button>
+                    <Trash2 class="h-3.5 w-3.5" />
+                  </Button>
                 </div>
               </div>
             </div>
@@ -542,10 +482,10 @@ async function handleCopyLink(): Promise<void> {
                     {{ isPublic ? '公开' : '私密' }}
                   </span>
                 </div>
-                <el-switch
+                <Switch
                   :model-value="isPublic"
-                  :loading="visibilitySaving"
-                  @change="handleVisibilityChange"
+                  :disabled="visibilitySaving"
+                  @update:model-value="handleVisibilityChange"
                 />
               </div>
 
@@ -563,33 +503,24 @@ async function handleCopyLink(): Promise<void> {
                       class="h-9 min-w-0 flex-1 truncate rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs text-slate-600"
                       @focus="($event.target as HTMLInputElement).select()"
                     />
-                    <button
-                      type="button"
-                      class="inline-flex h-9 shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50"
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      class="shrink-0 h-9"
                       @click="handleCopyLink"
                     >
-                      <svg
-                        class="h-3.5 w-3.5"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        stroke-width="2"
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                      >
-                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
-                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
-                      </svg>
+                      <Copy class="h-3.5 w-3.5" />
                       复制
-                    </button>
-                    <button
-                      type="button"
-                      class="inline-flex h-9 shrink-0 items-center gap-1 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-600 transition-colors hover:bg-slate-50 disabled:opacity-50"
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      class="shrink-0 h-9"
                       :disabled="tokenSaving"
                       @click="handleGenerateToken"
                     >
                       {{ tokenSaving ? '生成中…' : '重新生成' }}
-                    </button>
+                    </Button>
                   </div>
                 </div>
 
@@ -598,14 +529,14 @@ async function handleCopyLink(): Promise<void> {
                   <p class="text-xs text-slate-400">
                     尚未生成分享链接
                   </p>
-                  <button
-                    type="button"
-                    class="inline-flex h-8 items-center rounded-md bg-warm px-3 text-xs font-medium text-white transition-colors hover:bg-warm/90 disabled:opacity-50"
+                  <Button
+                    size="sm"
+                    class="h-8"
                     :disabled="tokenSaving"
                     @click="handleGenerateToken"
                   >
                     {{ tokenSaving ? '生成中…' : '生成分享链接' }}
-                  </button>
+                  </Button>
                 </div>
               </div>
             </div>
@@ -615,39 +546,58 @@ async function handleCopyLink(): Promise<void> {
     </main>
 
     <!-- 新建分类弹窗 -->
-    <el-dialog
-      v-model="newPurposeVisible"
-      title="新建出行目的分类"
-      width="360px"
-      append-to-body
-      :close-on-click-modal="false"
+    <Dialog
+      :open="newPurposeVisible"
+      @update:open="(v) => (newPurposeVisible = v)"
     >
-      <el-input
-        v-model="newPurposeName"
-        placeholder="如：摄影、徒步"
-        maxlength="10"
-        show-word-limit
-        @keyup.enter="confirmNewPurpose"
-      />
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <button
-            type="button"
-            class="rounded-md border border-slate-200 px-3 py-1.5 text-sm text-slate-600 transition-colors hover:bg-slate-50"
-            @click="cancelNewPurpose"
-          >
+      <DialogContent class="max-w-[360px]">
+        <DialogHeader>
+          <DialogTitle>新建出行目的分类</DialogTitle>
+          <DialogDescription class="sr-only">
+            新建出行目的分类
+          </DialogDescription>
+        </DialogHeader>
+        <Input
+          v-model="newPurposeName"
+          placeholder="如：摄影、徒步"
+          maxlength="10"
+          @keyup.enter="confirmNewPurpose"
+        />
+        <DialogFooter>
+          <Button variant="outline" size="sm" @click="cancelNewPurpose">
             取消
-          </button>
-          <button
-            type="button"
-            class="rounded-md bg-warm px-3 py-1.5 text-sm font-medium text-white transition-colors hover:bg-warm/90 disabled:opacity-60"
+          </Button>
+          <Button
+            size="sm"
             :disabled="newPurposeSaving"
             @click="confirmNewPurpose"
           >
             {{ newPurposeSaving ? '创建中...' : '创建' }}
-          </button>
-        </div>
-      </template>
-    </el-dialog>
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+
+    <!-- 删除分类二次确认 -->
+    <ConfirmDialog
+      v-model:visible="deletePurposeVisible"
+      title="删除分类"
+      :description="deletePurposeDescription"
+      confirm-text="确认删除"
+      cancel-text="取消"
+      danger
+      @confirm="confirmDeletePurpose"
+      @cancel="cancelDeletePurpose"
+    />
+
+    <!-- 重新生成分享链接二次确认 -->
+    <ConfirmDialog
+      v-model:visible="regenerateTokenVisible"
+      title="重新生成分享链接"
+      description="生成新的分享链接后，旧链接将立即失效。确认继续？"
+      confirm-text="确认生成"
+      cancel-text="取消"
+      @confirm="confirmRegenerateToken"
+    />
   </div>
 </template>

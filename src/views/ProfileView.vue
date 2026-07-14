@@ -1,18 +1,20 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { ElMessage } from 'element-plus'
-import AppNavbar from '@/components/layout/AppNavbar.vue'
+import { toast } from 'vue-sonner'
 import EmptyState from '@/components/common/EmptyState.vue'
 import StatCard from '@/components/business/StatCard.vue'
 import BaseMap from '@/components/business/BaseMap.vue'
 import TripCard from '@/components/business/TripCard.vue'
 import TripForm from '@/components/business/TripForm.vue'
+import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useAuthStore } from '@/stores/auth'
 import { useVisitRecordStore } from '@/stores/visitRecord'
 import { useTripStore } from '@/stores/trip'
 import { useResidenceStore } from '@/stores/residence'
 import { useProfileSettingsStore } from '@/stores/profileSettings'
 import { getAvatarUrl } from '@/utils/avatar'
+import { ChevronRight } from '@lucide/vue'
 import type { City, Trip, VisitRecord } from '@/types'
 
 /**
@@ -96,11 +98,11 @@ async function handleTripEditSubmit(data: {
       startDate: data.startDate,
       endDate: data.endDate,
     })
-    ElMessage.success('行程已更新')
+    toast.success('行程已更新')
     editVisible.value = false
     editingTrip.value = undefined
   } catch (e) {
-    ElMessage.error(e instanceof Error ? e.message : '更新失败')
+    toast.error(e instanceof Error ? e.message : '更新失败')
   } finally {
     editSaving.value = false
   }
@@ -112,61 +114,47 @@ async function handleTripDelete(
 ): Promise<void> {
   try {
     await tripStore.remove(trip.id, option)
-    ElMessage.success(
+    toast.success(
       option.deleteRecords ? '行程及关联记录已删除' : '行程已删除（记录已保留）',
     )
   } catch (e) {
-    ElMessage.error(e instanceof Error ? e.message : '删除失败')
+    toast.error(e instanceof Error ? e.message : '删除失败')
   }
 }
 </script>
 
 <template>
-  <div class="flex h-screen flex-col overflow-hidden bg-slate-50">
-    <!-- 顶部导航 -->
-    <AppNavbar />
-
+  <div class="h-full overflow-hidden bg-slate-50">
     <!-- 内容区 -->
-    <main class="flex-1 overflow-y-auto">
+    <main class="h-full overflow-y-auto">
       <div class="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:py-10">
         <!-- 页面标题 + 可见性入口 -->
         <div class="mb-6 flex items-start justify-between gap-3">
           <div>
-            <h1 class="text-2xl font-bold tracking-tight text-slate-800">
+            <h1 class="font-serif text-2xl tracking-tight text-slate-800">
               个人主页
             </h1>
             <p class="mt-1 text-sm text-slate-500">
               你的足迹概览与公开主页管理
             </p>
           </div>
-          <router-link
-            to="/settings"
-            class="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-sm font-medium text-slate-600 shadow-sm transition-colors hover:border-slate-300 hover:bg-slate-50"
-          >
-            <span
-              class="inline-block h-2 w-2 rounded-full"
-              :class="isPublic ? 'bg-green-500' : 'bg-slate-300'"
-            />
-            {{ isPublic ? '公开中' : '私密' }}
-            <svg
-              class="h-3.5 w-3.5 text-slate-400"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="m9 18 6-6-6-6" />
-            </svg>
-          </router-link>
+          <Button as-child variant="outline" class="shrink-0">
+            <router-link to="/settings">
+              <span
+                class="inline-block h-2 w-2 rounded-full"
+                :class="isPublic ? 'bg-green-500' : 'bg-slate-300'"
+              />
+              {{ isPublic ? '公开中' : '私密' }}
+              <ChevronRight class="h-3.5 w-3.5 text-muted-foreground" />
+            </router-link>
+          </Button>
         </div>
 
         <!-- 加载骨架屏 -->
         <div v-if="loading" class="space-y-6">
-          <div class="h-32 animate-pulse rounded-xl bg-slate-100" />
-          <div class="h-80 animate-pulse rounded-xl bg-slate-100" />
-          <div class="h-40 animate-pulse rounded-xl bg-slate-100" />
+          <Skeleton class="h-32 rounded-xl" />
+          <Skeleton class="h-80 rounded-xl" />
+          <Skeleton class="h-40 rounded-xl" />
         </div>
 
         <template v-else>
@@ -225,12 +213,11 @@ async function handleTripDelete(
             subtitle="前往地图点亮你的第一座城市吧"
           >
             <template #action>
-              <router-link
-                to="/"
-                class="inline-flex h-9 items-center rounded-lg bg-warm px-4 text-sm font-semibold text-white transition-colors hover:bg-warm/90"
-              >
-                去地图
-              </router-link>
+              <Button as-child>
+                <router-link to="/">
+                  去地图
+                </router-link>
+              </Button>
             </template>
           </EmptyState>
 

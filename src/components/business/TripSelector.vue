@@ -1,22 +1,35 @@
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { toast } from 'vue-sonner'
+import { Plus, Check, ChevronsUpDown, CircleMinus } from '@lucide/vue'
+import { Button } from '@/components/ui/button'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+  CommandSeparator,
+} from '@/components/ui/command'
 import { useTripStore } from '@/stores/trip'
 import TripForm from './TripForm.vue'
 import type { Trip } from '@/types'
 
 /**
- * TripSelector - 行程选择器（用于 RecordForm）
+ * TripSelector - 行程选择器（Combobox 形态）
  *
- * 下拉显示当前用户全部行程（名称 + 日期范围），含"不关联行程"选项。
- * 下拉底部"+ 新建行程"按钮 → 弹出 TripForm 创建 → 自动选中新建行程。
- *
- * Props:
- *  - modelValue?: string（trip_id，null/undefined 表示不关联）
- * Emits:
- *  - update:modelValue
- *  - change
+ * Popover + Command 组合实现：
+ *  - "不关联行程" 选项（value = NONE_SENTINEL）
+ *  - 行程列表（按 trip.id 为 value）
+ *  - 底部 "+ 新建行程" 项（preventDefault 后打开 TripForm 创建）
  */
+
 defineProps<{
   modelValue?: string | null
 }>()
@@ -27,6 +40,7 @@ const emit = defineEmits<{
 }>()
 
 const tripStore = useTripStore()
+const open = ref(false)
 
 onMounted(async () => {
   if (tripStore.trips.length === 0) {
@@ -46,14 +60,21 @@ function tripLabel(trip: Trip): string {
   return `${trip.name}（${date}）`
 }
 
-// "不关联行程" 选项使用空字符串作为哨兵值（el-option 不接受 null），
-// 选中时映射回 null 对外 emit
-const NONE_VALUE = ''
+// 哨兵值
+const NONE_SENTINEL = '__none_trip__'
+const CREATE_SENTINEL = '__create_trip__'
 
-function handleChange(value: string | number | boolean): void {
-  const v = value === NONE_VALUE ? null : String(value)
+function selectValue(value: string): void {
+  const v = value === NONE_SENTINEL ? null : value
   emit('update:modelValue', v)
   emit('change', v)
+  open.value = false
+}
+
+function handleCreateSelect(event: Event): void {
+  event.preventDefault()
+  open.value = false
+  openCreate()
 }
 
 // ---- 新建行程 ----
@@ -80,9 +101,9 @@ async function handleCreateSubmit(data: {
     emit('update:modelValue', trip.id)
     emit('change', trip.id)
     createVisible.value = false
-    ElMessage.success('已新建行程')
+    toast.success('已新建行程')
   } catch (e) {
-    ElMessage.error('新建行程失败')
+    toast.error('新建行程失败')
     console.error(e)
   } finally {
     creating.value = false
@@ -96,45 +117,71 @@ function handleCreateCancel(): void {
 
 <template>
   <div class="trip-selector">
-    <el-select
-      :model-value="modelValue ?? NONE_VALUE"
-      placeholder="选择已有行程或留空"
-      class="w-full"
-      :loading="tripStore.loading"
-      @change="handleChange"
-    >
-      <!-- 不关联行程 -->
-      <el-option label="不关联行程" :value="NONE_VALUE" />
-
-      <el-option
-        v-for="trip in tripStore.trips"
-        :key="trip.id"
-        :label="tripLabel(trip)"
-        :value="trip.id"
-      />
-
-      <!-- 新建行程入口 -->
-      <template #footer>
-        <button
+    <Popover v-model:open="open">
+      <PopoverTrigger as-child>
+        <Button
           type="button"
-          class="flex w-full items-center justify-center gap-1 py-1.5 text-xs font-medium text-warm transition-colors hover:text-warm/80"
-          @click="openCreate"
+          variant="outline"
+          role="combobox"
+          :aria-expanded="open"
+          class="w-full justify-between font-normal"
+          :class="!modelValue && 'text-muted-foreground'"
         >
-          <svg
-            class="h-3.5 w-3.5"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M12 5v14M5 12h14" />
-          </svg>
-          新建行程
-        </button>
-      </template>
-    </el-select>
+          <span class="truncate">
+            <template v-if="!modelValue">
+              不关联行程
+            </template>
+            <template v-else>
+              {{ tripLabel(tripStore.trips.find((t) => t.id === modelValue) ?? tripStore.trips[0]) }}
+            </template>
+          </span>
+          <ChevronsUpDown class="h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent class="w-[--reka-popper-anchor-width] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="搜索行程..." />
+          <CommandList>
+            <CommandEmpty>无匹配行程</CommandEmpty>
+            <CommandGroup heading="选择行程">
+              <CommandItem
+                :value="NONE_SENTINEL"
+                @select="selectValue(NONE_SENTINEL)"
+              >
+                <CircleMinus class="h-4 w-4 text-muted-foreground" />
+                <span class="text-muted-foreground">不关联行程</span>
+                <Check
+                  v-if="!modelValue"
+                  class="ml-auto h-4 w-4"
+                />
+              </CommandItem>
+              <CommandItem
+                v-for="trip in tripStore.trips"
+                :key="trip.id"
+                :value="trip.id"
+                @select="selectValue(trip.id)"
+              >
+                <Check
+                  class="h-4 w-4"
+                  :class="modelValue === trip.id ? 'opacity-100' : 'opacity-0'"
+                />
+                <span class="truncate">{{ tripLabel(trip) }}</span>
+              </CommandItem>
+            </CommandGroup>
+            <CommandSeparator />
+            <CommandGroup>
+              <CommandItem
+                :value="CREATE_SENTINEL"
+                @select="handleCreateSelect"
+              >
+                <Plus class="h-4 w-4 text-primary" />
+                <span class="text-primary">新建行程</span>
+              </CommandItem>
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
 
     <!-- 新建行程对话框 -->
     <TripForm

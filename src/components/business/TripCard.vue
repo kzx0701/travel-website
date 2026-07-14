@@ -1,6 +1,17 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
-import { ElMessageBox } from 'element-plus'
+import { Calendar, ChevronDown, MapPin, Pencil, Trash2 } from '@lucide/vue'
+import { Button } from '@/components/ui/button'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import type { Trip, VisitRecord } from '@/types'
 
 /**
@@ -64,35 +75,24 @@ function handleEdit(): void {
   emit('edit', props.trip)
 }
 
-/**
- * 删除行程：三选项确认
- * - 确认按钮（保留记录）→ deleteRecords: false
- * - 取消按钮（同步删除记录）→ deleteRecords: true
- * - 关闭（X/Esc）→ 用户取消，不 emit
- */
+// ---- 删除行程：三选项确认（声明式 AlertDialog） ----
+const deleteVisible = ref(false)
+
+const deleteDescription = computed(() =>
+  `确定要删除行程「${props.trip.name}」吗？\n关联的 ${recordCount.value} 条到达记录可保留（解绑行程）或同步删除。`,
+)
+
 function handleDelete(): void {
-  ElMessageBox.confirm(
-    `确定要删除行程「${props.trip.name}」吗？\n关联的 ${recordCount.value} 条到达记录可保留（解绑行程）或同步删除。`,
-    '删除行程',
-    {
-      distinguishCancelAndClose: true,
-      confirmButtonText: '保留记录',
-      cancelButtonText: '同步删除记录',
-      cancelButtonClass: 'el-button--danger',
-      type: 'warning',
-    },
-  )
-    .then(() => {
-      // confirm = 保留记录
-      emit('delete', props.trip, { deleteRecords: false })
-    })
-    .catch((action: string) => {
-      if (action === 'cancel') {
-        // cancel = 同步删除记录
-        emit('delete', props.trip, { deleteRecords: true })
-      }
-      // action === 'close' 表示用户关闭，不做处理
-    })
+  deleteVisible.value = true
+}
+
+function handleKeepRecords(): void {
+  // AlertDialogAction 会自动关闭对话框
+  emit('delete', props.trip, { deleteRecords: false })
+}
+
+function handleSyncDelete(): void {
+  emit('delete', props.trip, { deleteRecords: true })
 }
 </script>
 
@@ -114,105 +114,53 @@ function handleDelete(): void {
 
         <!-- 操作按钮 -->
         <div class="flex shrink-0 items-center gap-0.5">
-          <button
-            type="button"
-            class="flex h-6 w-6 items-center justify-center rounded text-slate-400 transition-colors hover:bg-slate-50 hover:text-warm"
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            class="size-6 hover:bg-muted hover:text-primary"
             :title="expanded ? '收起' : '展开'"
             @click="toggleExpand"
           >
-            <svg
+            <ChevronDown
               class="h-3.5 w-3.5 transition-transform"
               :class="expanded ? 'rotate-180' : ''"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <polyline points="6 9 12 15 18 9" />
-            </svg>
-          </button>
-          <button
+            />
+          </Button>
+          <Button
             v-if="!readonly"
-            type="button"
-            class="flex h-6 w-6 items-center justify-center rounded text-slate-400 transition-colors hover:bg-slate-50 hover:text-warm"
+            variant="ghost"
+            size="icon-sm"
+            class="size-6 hover:bg-muted hover:text-primary"
             title="编辑"
             @click="handleEdit"
           >
-            <svg
-              class="h-3.5 w-3.5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M12 20h9" />
-              <path d="M16.5 3.5a2.12 2.12 0 0 1 3 3L7 19l-4 1 1-4Z" />
-            </svg>
-          </button>
-          <button
+            <Pencil class="h-3.5 w-3.5" />
+          </Button>
+          <Button
             v-if="!readonly"
-            type="button"
-            class="flex h-6 w-6 items-center justify-center rounded text-slate-400 transition-colors hover:bg-slate-50 hover:text-red-500"
+            variant="ghost"
+            size="icon-sm"
+            class="size-6 hover:bg-muted hover:text-destructive"
             title="删除"
             @click="handleDelete"
           >
-            <svg
-              class="h-3.5 w-3.5"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              stroke-width="2"
-              stroke-linecap="round"
-              stroke-linejoin="round"
-            >
-              <path d="M3 6h18" />
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
-              <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            </svg>
-          </button>
+            <Trash2 class="h-3.5 w-3.5" />
+          </Button>
         </div>
       </div>
 
       <!-- 统计徽章 -->
       <div class="mt-2 flex items-center gap-2">
         <span
-          class="inline-flex items-center gap-1 rounded-full bg-warm/5 px-2 py-0.5 text-xs text-warm"
+          class="inline-flex items-center gap-1 rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"
         >
-          <svg
-            class="h-3 w-3"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z" />
-            <circle cx="12" cy="10" r="3" />
-          </svg>
+          <MapPin class="h-3 w-3" />
           {{ cityCount }} 城
         </span>
         <span
-          class="inline-flex items-center gap-1 rounded-full bg-slate-100 px-2 py-0.5 text-xs text-slate-500"
+          class="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground"
         >
-          <svg
-            class="h-3 w-3"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            stroke-width="2"
-            stroke-linecap="round"
-            stroke-linejoin="round"
-          >
-            <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
-            <line x1="16" y1="2" x2="16" y2="6" />
-            <line x1="8" y1="2" x2="8" y2="6" />
-            <line x1="3" y1="10" x2="21" y2="10" />
-          </svg>
+          <Calendar class="h-3 w-3" />
           {{ recordCount }} 条记录
         </span>
       </div>
@@ -245,11 +193,35 @@ function handleDelete(): void {
               {{ record.note }}
             </p>
           </div>
-          <span class="shrink-0 rounded-full bg-warm/5 px-1.5 py-0.5 text-[11px] text-warm">
+          <span class="shrink-0 rounded-full bg-secondary px-1.5 py-0.5 text-[11px] text-secondary-foreground">
             {{ record.purpose }}
           </span>
         </div>
       </div>
     </div>
+
+    <!-- 删除行程三选一确认 -->
+    <AlertDialog :open="deleteVisible" @update:open="(v) => (deleteVisible = v)">
+      <AlertDialogContent class="max-w-[420px]">
+        <AlertDialogHeader>
+          <AlertDialogTitle>删除行程</AlertDialogTitle>
+          <AlertDialogDescription class="whitespace-pre-line leading-relaxed">
+            {{ deleteDescription }}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter class="sm:flex-col-reverse sm:gap-2">
+          <AlertDialogCancel>取消</AlertDialogCancel>
+          <AlertDialogAction @click="handleKeepRecords">
+            保留记录
+          </AlertDialogAction>
+          <AlertDialogAction
+            class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            @click="handleSyncDelete"
+          >
+            同步删除记录
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   </div>
 </template>

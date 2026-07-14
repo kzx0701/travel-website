@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { Skeleton } from '@/components/ui/skeleton'
+
 /**
  * SkeletonLoader - 通用骨架屏加载组件
  *
@@ -21,14 +23,14 @@ withDefaults(
 </script>
 
 <template>
-  <div class="skeleton-loader animate-pulse" aria-busy="true" aria-live="polite">
+  <div class="skeleton-loader" aria-busy="true" aria-live="polite">
     <!-- 行模式：多行占位 -->
     <template v-if="mode === 'lines'">
-      <div class="space-y-2">
-        <div
+      <div class="flex flex-col gap-2">
+        <Skeleton
           v-for="i in rows"
           :key="i"
-          class="h-3 rounded bg-slate-200"
+          class="h-3"
           :style="{ width: i === rows ? '60%' : '100%' }"
         />
       </div>
@@ -36,7 +38,7 @@ withDefaults(
 
     <!-- 卡片模式：单块占位 -->
     <template v-else-if="mode === 'card'">
-      <div class="h-32 w-full rounded-xl bg-slate-200" />
+      <Skeleton class="h-32 w-full rounded-xl" />
     </template>
 
     <!-- 自定义插槽 -->

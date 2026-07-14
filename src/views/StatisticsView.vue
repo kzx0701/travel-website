@@ -1,11 +1,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import AppNavbar from '@/components/layout/AppNavbar.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import StatCard from '@/components/business/StatCard.vue'
 import BaseMap from '@/components/business/BaseMap.vue'
 import TripCard from '@/components/business/TripCard.vue'
 import PurposePieChart from '@/components/business/PurposePieChart.vue'
+import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
+import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group'
+import { DatePicker } from '@/components/ui/date-picker'
 import { useVisitRecordStore } from '@/stores/visitRecord'
 import { useTripStore } from '@/stores/trip'
 import { cityMap } from '@/data/cities'
@@ -119,12 +122,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex h-screen flex-col overflow-hidden bg-slate-50">
-    <!-- 顶部导航 -->
-    <AppNavbar />
-
-    <!-- 内容区 -->
-    <main class="flex-1 overflow-y-auto">
+  <main class="h-full overflow-y-auto bg-slate-50">
       <div class="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:py-10">
         <!-- 页面标题 -->
         <div class="mb-6">
@@ -140,36 +138,37 @@ onMounted(async () => {
         <section
           class="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
         >
-          <el-radio-group v-model="rangeType">
-            <el-radio-button value="all">全部</el-radio-button>
-            <el-radio-button value="thisYear">今年</el-radio-button>
-            <el-radio-button value="lastYear">最近一年</el-radio-button>
-            <el-radio-button value="custom">自定义</el-radio-button>
-          </el-radio-group>
-          <el-date-picker
+          <ToggleGroup
+            :model-value="rangeType"
+            type="single"
+            variant="outline"
+            @update:model-value="(v) => v && (rangeType = v as RangeType)"
+          >
+            <ToggleGroupItem value="all">全部</ToggleGroupItem>
+            <ToggleGroupItem value="thisYear">今年</ToggleGroupItem>
+            <ToggleGroupItem value="lastYear">最近一年</ToggleGroupItem>
+            <ToggleGroupItem value="custom">自定义</ToggleGroupItem>
+          </ToggleGroup>
+          <DatePicker
             v-if="rangeType === 'custom'"
             v-model="customRange"
-            type="daterange"
-            range-separator="—"
-            start-placeholder="开始日期"
-            end-placeholder="结束日期"
-            value-format="YYYY-MM-DD"
-            class="!w-72"
+            range
+            class="w-72"
           />
         </section>
 
         <!-- 加载骨架屏 -->
         <div v-if="visitRecordStore.loading" class="space-y-6">
           <div class="grid grid-cols-3 gap-3">
-            <div
+            <Skeleton
               v-for="i in 3"
               :key="i"
-              class="h-20 animate-pulse rounded-lg bg-slate-100"
+              class="h-20 rounded-lg"
             />
           </div>
           <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <div class="h-80 animate-pulse rounded-xl bg-slate-100" />
-            <div class="h-80 animate-pulse rounded-xl bg-slate-100" />
+            <Skeleton class="h-80 rounded-xl" />
+            <Skeleton class="h-80 rounded-xl" />
           </div>
         </div>
 
@@ -181,12 +180,11 @@ onMounted(async () => {
           subtitle="前往地图点亮你的第一座城市吧"
         >
           <template #action>
-            <router-link
-              to="/"
-              class="inline-flex h-9 items-center rounded-lg bg-warm px-4 text-sm font-semibold text-white transition-colors hover:bg-warm/90"
-            >
-              去地图
-            </router-link>
+            <Button as-child>
+              <router-link to="/">
+                去地图
+              </router-link>
+            </Button>
           </template>
         </EmptyState>
 
@@ -292,5 +290,4 @@ onMounted(async () => {
         </template>
       </div>
     </main>
-  </div>
 </template>
