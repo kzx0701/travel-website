@@ -1,8 +1,18 @@
 import { onBeforeUnmount, onMounted, ref, shallowRef, type Ref } from 'vue'
 import * as echarts from 'echarts'
 import type { City, MapLevel } from '@/types'
-import { provinces, getProvinceCenter, getCityByCode } from '@/data/cities'
-import { registerMapForLevel, getProvinceBBox } from '@/utils/mapGeoLoader'
+import {
+  provinces,
+  getProvinceCenter,
+  getCityByCode,
+} from '@/data/cities'
+import {
+  registerMapForLevel,
+  getProvinceBBox,
+  loadGeoJson,
+  type GeoJSON,
+  type GeoJSONFeature,
+} from '@/utils/mapGeoLoader'
 import {
   MAP_COLORS,
   TIER_COLORS,
@@ -42,6 +52,23 @@ interface ScatterDataItem {
 }
 
 /**
+ * 省级细节覆盖层数据项（城市 polygon 用）
+ */
+interface ProvinceDetailDataItem {
+  name: string
+  value: [number, number]
+  cityCode: string
+  provinceCode: string
+  provinceName: string
+  visitCount: number
+  isResidence: boolean
+  isLit: boolean
+  isSelected: boolean
+  opacity: number
+  polygons: Array<Array<[number, number]>>
+}
+
+/**
  * 事件回调签名
  */
 export interface UseMapChartCallbacks {
@@ -67,10 +94,18 @@ export function useMapChart(
   let flyTimer: ReturnType<typeof setTimeout> | null = null
   // regions 渐变动画定时器（分帧逐步调整 opacity 实现柔和过渡）
   let regionsAnimTimer: ReturnType<typeof setInterval> | null = null
+  let detailLayerAnimTimer: ReturnType<typeof setInterval> | null = null
+  let detailLayerRequestId = 0
+  let detailLayerProvinceCode: string | null = null
+  let detailLayerGeo: GeoJSON | null = null
+  let detailLayerData: ProvinceDetailDataItem[] = []
+  let geoRoamRaf = 0
+  let resizeRaf = 0
   // 非聚焦省份的暗化目标值（1 = 正常，DIM_OPACITY = 完全暗化）
   const DIM_OPACITY = 0.25
   // regions 渐变动画时长
   const REGIONS_FADE_DURATION = 350
+  const DETAIL_FADE_DURATION = 260
 
   let resizeObserver: ResizeObserver | null = null
 
@@ -81,6 +116,13 @@ export function useMapChart(
     if (regionsAnimTimer) {
       clearInterval(regionsAnimTimer)
       regionsAnimTimer = null
+    }
+  }
+
+  function clearDetailLayerAnim(): void {
+    if (detailLayerAnimTimer) {
+      clearInterval(detailLayerAnimTimer)
+      detailLayerAnimTimer = null
     }
   }
 
@@ -116,11 +158,224 @@ export function useMapChart(
 
     // 居住地若不在 litCities 中也单独绘制
     if (residenceCityCode && !litCodeSet.has(residenceCityCode)) {
-      // 居住地数据需调用方提供坐标，此处通过 litCities 已覆盖
-      // 若调用方未传居住地 city 数据则跳过
+      const city = getCityByCode(residenceCityCode)
+      if (city) {
+        items.push({
+          name: city.name,
+          value: [city.longitude, city.latitude],
+          cityCode: city.code,
+          provinceName: city.provinceName,
+          visitCount: 0,
+          isResidence: true,
+          isLit: false,
+          itemStyle: {
+            color: MAP_COLORS.residence,
+            borderColor: '#FFFFFF',
+            borderWidth: 1.8,
+          },
+          symbolSize: 14,
+        })
+      }
     }
 
     return items
+  }
+
+  function getCityFromScatterData(data: ScatterDataItem): City {
+    const city = getCityByCode(data.cityCode)
+    if (city) return city
+
+    return {
+      code: data.cityCode,
+      name: data.name,
+      provinceCode: '',
+      provinceName: data.provinceName,
+      longitude: data.value[0],
+      latitude: data.value[1],
+      pinyin: '',
+    }
+  }
+
+  function getFeatureAdcode(feature: GeoJSONFeature): string {
+    const adcode = feature.properties?.adcode
+    return typeof adcode === 'number' || typeof adcode === 'string'
+      ? String(adcode)
+      : ''
+  }
+
+  function getFeatureCenter(feature: GeoJSONFeature): [number, number] | null {
+    const center = feature.properties?.center
+    if (Array.isArray(center) && center.length >= 2) {
+      const [lng, lat] = center
+      if (typeof lng === 'number' && typeof lat === 'number') return [lng, lat]
+    }
+    const centroid = feature.properties?.centroid
+    if (Array.isArray(centroid) && centroid.length >= 2) {
+      const [lng, lat] = centroid
+      if (typeof lng === 'number' && typeof lat === 'number') return [lng, lat]
+    }
+    return null
+  }
+
+  function extractFeaturePolygons(feature: GeoJSONFeature): Array<Array<[number, number]>> {
+    const coords = feature.geometry.coordinates
+    const polygons: Array<Array<[number, number]>> = []
+
+    function addRing(ring: unknown): void {
+      if (!Array.isArray(ring)) return
+      const points: Array<[number, number]> = []
+      for (const point of ring) {
+        if (!Array.isArray(point) || point.length < 2) continue
+        const [lng, lat] = point
+        if (typeof lng === 'number' && typeof lat === 'number') {
+          points.push([lng, lat])
+        }
+      }
+      if (points.length >= 3) polygons.push(points)
+    }
+
+    if (feature.geometry.type === 'Polygon' && Array.isArray(coords)) {
+      for (const ring of coords) addRing(ring)
+    } else if (feature.geometry.type === 'MultiPolygon' && Array.isArray(coords)) {
+      for (const polygon of coords) {
+        if (!Array.isArray(polygon)) continue
+        for (const ring of polygon) addRing(ring)
+      }
+    }
+
+    return polygons
+  }
+
+  function buildProvinceDetailData(
+    geo: GeoJSON,
+    provinceCode: string,
+    opacity: number,
+  ): ProvinceDetailDataItem[] {
+    const { cityVisitCount, residenceCityCode, level, regionCode } = params.value
+    const province = provinces.find((p) => p.code === provinceCode)
+
+    return geo.features
+      .map((feature) => {
+        const cityCode = getFeatureAdcode(feature)
+        const city = cityCode ? getCityByCode(cityCode) : undefined
+        if (!city) return null
+
+        const polygons = extractFeaturePolygons(feature)
+        if (polygons.length === 0) return null
+
+        const center = getFeatureCenter(feature) ?? [city.longitude, city.latitude]
+        const visitCount = cityVisitCount[city.code] ?? 0
+        return {
+          name: city.name,
+          value: center,
+          cityCode: city.code,
+          provinceCode,
+          provinceName: province?.name ?? city.provinceName,
+          visitCount,
+          isResidence: city.code === residenceCityCode,
+          isLit: visitCount > 0,
+          isSelected: level === 'city' && regionCode === city.code,
+          opacity,
+          polygons,
+        } satisfies ProvinceDetailDataItem
+      })
+      .filter((item): item is ProvinceDetailDataItem => !!item)
+      .sort((a, b) => Number(a.isSelected) - Number(b.isSelected))
+  }
+
+  function getDetailLayerSeriesData(opacity: number): ProvinceDetailDataItem[] {
+    return detailLayerData.map((item) => ({ ...item, opacity }))
+  }
+
+  function updateDetailLayerSeries(opacity?: number): void {
+    if (!chart.value) return
+    if (typeof opacity === 'number') {
+      detailLayerData = getDetailLayerSeriesData(opacity)
+    }
+    chart.value.setOption(
+      {
+        series: [
+          {
+            id: 'province-detail',
+            animation: false,
+            animationDuration: 0,
+            animationDurationUpdate: 0,
+            animationEasingUpdate: 'linear',
+            universalTransition: { enabled: false },
+            data: detailLayerData,
+          },
+        ],
+      },
+      { notMerge: false },
+    )
+  }
+
+  async function loadProvinceDetailLayer(provinceCode: string): Promise<boolean> {
+    const requestId = ++detailLayerRequestId
+
+    if (detailLayerProvinceCode === provinceCode && detailLayerGeo) {
+      const opacity = detailLayerData[0]?.opacity ?? 1
+      detailLayerData = buildProvinceDetailData(detailLayerGeo, provinceCode, opacity)
+      return true
+    }
+
+    clearDetailLayerAnim()
+    detailLayerProvinceCode = provinceCode
+    detailLayerGeo = null
+    detailLayerData = []
+
+    const geo = await loadGeoJson('province', provinceCode)
+    if (requestId !== detailLayerRequestId) return false
+    if (!geo) return false
+
+    detailLayerGeo = geo
+    detailLayerData = buildProvinceDetailData(geo, provinceCode, 0)
+    return detailLayerData.length > 0
+  }
+
+  function animateDetailLayerOpacity(
+    fromOpacity: number,
+    toOpacity: number,
+    duration: number,
+    onDone?: () => void,
+  ): void {
+    if (!chart.value || detailLayerData.length === 0) {
+      onDone?.()
+      return
+    }
+    clearDetailLayerAnim()
+    const start = performance.now()
+    const ease = (t: number) => 1 - Math.pow(1 - t, 3)
+
+    detailLayerAnimTimer = setInterval(() => {
+      const elapsed = performance.now() - start
+      const progress = Math.min(elapsed / duration, 1)
+      const opacity = fromOpacity + (toOpacity - fromOpacity) * ease(progress)
+      updateDetailLayerSeries(opacity)
+
+      if (progress >= 1) {
+        clearDetailLayerAnim()
+        updateDetailLayerSeries(toOpacity)
+        onDone?.()
+      }
+    }, 16)
+  }
+
+  function hideProvinceDetailLayer(): void {
+    detailLayerRequestId += 1
+    if (detailLayerData.length === 0) {
+      detailLayerProvinceCode = null
+      detailLayerGeo = null
+      return
+    }
+
+    const currentOpacity = detailLayerData[0]?.opacity ?? 1
+    animateDetailLayerOpacity(currentOpacity, 0, DETAIL_FADE_DURATION, () => {
+      detailLayerProvinceCode = null
+      detailLayerGeo = null
+      detailLayerData = []
+      updateDetailLayerSeries()
+    })
   }
 
   /**
@@ -162,20 +417,20 @@ export function useMapChart(
             areaColor: MAP_COLORS.unlit,
             opacity: dimOpacity,
             borderColor: MAP_COLORS.borderColor,
-            borderWidth: 0.5,
+            borderWidth: 0.7,
           },
         }
       }
-      // 聚焦省份 → 高亮边框 + 柔和发光
+      // 聚焦省份外轮廓由省级 GeoJSON 覆盖层绘制，避免和全国 GeoJSON 轮廓不一致
       if (isFocused) {
         return {
           name: p.name,
           itemStyle: {
             areaColor: visitCount > 0 ? MAP_COLORS.litFill : MAP_COLORS.unlit,
-            borderColor: MAP_COLORS.focusBorder,
-            borderWidth: 1.5,
-            shadowColor: 'rgba(255, 107, 53, 0.25)',
-            shadowBlur: 12,
+            borderColor: 'rgba(203, 213, 225, 0.55)',
+            borderWidth: 0.8,
+            shadowColor: 'rgba(15, 23, 42, 0.06)',
+            shadowBlur: 6,
             opacity: 1,
           },
         }
@@ -186,9 +441,9 @@ export function useMapChart(
         itemStyle: {
           areaColor: visitCount > 0 ? MAP_COLORS.litFill : MAP_COLORS.unlit,
           borderColor: MAP_COLORS.borderColor,
-          borderWidth: 0.8,
+          borderWidth: 1,
           shadowColor: MAP_COLORS.shadowColor,
-          shadowBlur: 6,
+          shadowBlur: 7,
           opacity: 1,
         },
       }
@@ -271,7 +526,14 @@ export function useMapChart(
     const hasMap = !!mapName
 
     const tooltipFormatter = (p: unknown) => {
-      const evt = p as { name?: string; data?: ScatterDataItem }
+      const evt = p as { name?: string; data?: ScatterDataItem | ProvinceDetailDataItem }
+      if (evt.data && typeof evt.data === 'object' && 'polygons' in evt.data) {
+        const d = evt.data as ProvinceDetailDataItem
+        if (d.isSelected) return `${d.name}<br/>当前选中`
+        if (d.isResidence) return `${d.name}<br/>居住地`
+        if (d.visitCount > 0) return `${d.name}<br/>到达 ${d.visitCount} 次`
+        return `${d.name}<br/>点击选择城市`
+      }
       if (evt.data && typeof evt.data === 'object' && 'cityCode' in evt.data) {
         const d = evt.data as ScatterDataItem
         if (d.isResidence) return `${d.name}<br/>居住地`
@@ -304,7 +566,7 @@ export function useMapChart(
               itemStyle: d.itemStyle,
               symbolSize: d.symbolSize,
             })),
-            zlevel: 2,
+            z: 2,
           },
         ],
         animation: true,
@@ -332,7 +594,7 @@ export function useMapChart(
       },
       geo: {
         map: mapName ?? '',
-        roam: isReadonly ? false : true,
+        roam: isReadonly ? false : 'move',
         zoom: 1,
         scaleLimit: { min: 0.8, max: 8 },
         // 居中并撑满容器，保持地图宽高比
@@ -342,16 +604,16 @@ export function useMapChart(
         itemStyle: {
           areaColor: MAP_COLORS.unlit,
           borderColor: MAP_COLORS.borderColor,
-          borderWidth: 0.8,
+          borderWidth: 1,
           shadowColor: MAP_COLORS.shadowColor,
-          shadowBlur: 6,
+          shadowBlur: 7,
         },
         emphasis: {
           itemStyle: {
             areaColor: MAP_COLORS.hoverFill,
             borderColor: MAP_COLORS.focusBorder,
-            borderWidth: 1.2,
-            shadowColor: 'rgba(255, 107, 53, 0.15)',
+            borderWidth: 1.5,
+            shadowColor: 'rgba(15, 23, 42, 0.10)',
             shadowBlur: 10,
           },
           label: { show: false },
@@ -362,6 +624,83 @@ export function useMapChart(
       series: [
         // 已点亮城市：scatter + 柔和发光
         {
+          id: 'province-detail',
+          name: 'province-detail',
+          type: 'custom',
+          coordinateSystem: 'geo',
+          silent: false,
+          animation: false,
+          animationDuration: 0,
+          animationDurationUpdate: 0,
+          animationEasingUpdate: 'linear',
+          universalTransition: { enabled: false },
+          data: detailLayerData,
+          z: 3,
+          renderItem: (params: unknown, api: unknown) => {
+            const renderParams = params as { dataIndex?: number }
+            const renderApi = api as {
+              coord: (point: [number, number]) => [number, number]
+              style: (extra?: Record<string, unknown>) => Record<string, unknown>
+            }
+            const item =
+              typeof renderParams.dataIndex === 'number'
+                ? detailLayerData[renderParams.dataIndex]
+                : undefined
+            if (!item || item.opacity <= 0) return { type: 'group', children: [] }
+
+            const fillColor = item.isSelected
+              ? `rgba(59, 130, 246, ${0.22 * item.opacity})`
+              : item.isResidence
+                ? `rgba(59, 130, 246, ${0.08 * item.opacity})`
+                : item.isLit
+                  ? `rgba(255, 179, 128, ${0.16 * item.opacity})`
+                  : `rgba(248, 250, 252, ${0.08 * item.opacity})`
+            const strokeColor = item.isSelected
+              ? `rgba(37, 99, 235, ${0.95 * item.opacity})`
+              : item.isResidence
+                ? `rgba(59, 130, 246, ${0.72 * item.opacity})`
+                : item.isLit
+                  ? `rgba(185, 130, 90, ${0.62 * item.opacity})`
+                  : `rgba(71, 85, 105, ${0.36 * item.opacity})`
+            const lineWidth = item.isSelected
+              ? 2.2
+              : item.isLit || item.isResidence
+                ? 1.3
+                : 0.9
+
+            return {
+              type: 'group',
+              children: item.polygons.map((ring) => ({
+                type: 'polygon',
+                shape: {
+                  points: ring.map((point) => renderApi.coord(point)),
+                },
+                style: renderApi.style({
+                  fill: fillColor,
+                  stroke: strokeColor,
+                  lineWidth,
+                  shadowBlur: item.isSelected ? 3 * item.opacity : 0,
+                  shadowColor: item.isSelected
+                    ? `rgba(37, 99, 235, ${0.12 * item.opacity})`
+                    : 'rgba(0, 0, 0, 0)',
+                }),
+                emphasis: {
+                  style: {
+                    fill: item.isSelected
+                      ? `rgba(59, 130, 246, ${0.28 * item.opacity})`
+                      : `rgba(255, 179, 128, ${0.18 * item.opacity})`,
+                    stroke: item.isSelected
+                      ? `rgba(37, 99, 235, ${0.98 * item.opacity})`
+                      : `rgba(185, 130, 90, ${0.88 * item.opacity})`,
+                    lineWidth: item.isSelected ? 2.4 : 1.5,
+                  },
+                },
+              })),
+            }
+          },
+        },
+        {
+          id: 'cities',
           name: 'cities',
           type: 'scatter',
           coordinateSystem: 'geo',
@@ -373,8 +712,8 @@ export function useMapChart(
             show: false,
           },
           itemStyle: {
-            shadowColor: 'rgba(255, 107, 53, 0.4)',
-            shadowBlur: 6,
+            shadowColor: 'rgba(255, 107, 53, 0.18)',
+            shadowBlur: 3,
           },
           emphasis: {
             scale: 1.4,
@@ -393,17 +732,16 @@ export function useMapChart(
               borderWidth: 1,
             },
           },
-          zlevel: 2,
+          z: 4,
         },
-        // 居住地：effectScatter + 精致涟漪
+        // 居住地：静态高亮点，避免持续涟漪动画拖慢地图拖动
         {
+          id: 'residence',
           name: 'residence',
-          type: 'effectScatter',
+          type: 'scatter',
           coordinateSystem: 'geo',
           data: scatterData.filter((d) => d.isResidence),
           symbolSize: 12,
-          rippleEffect: { brushType: 'stroke', scale: 2.5, period: 5 },
-          showEffectOn: 'render',
           label: {
             show: true,
             formatter: (p: unknown) => (p as { data?: ScatterDataItem }).data?.name ?? '',
@@ -422,10 +760,10 @@ export function useMapChart(
             color: MAP_COLORS.residence,
             borderColor: '#FFFFFF',
             borderWidth: 2,
-            shadowColor: 'rgba(59, 130, 246, 0.4)',
-            shadowBlur: 8,
+            shadowColor: 'rgba(59, 130, 246, 0.22)',
+            shadowBlur: 4,
           },
-          zlevel: 3,
+          z: 5,
         },
       ],
       // 入场动画 + 切换过渡
@@ -493,6 +831,15 @@ export function useMapChart(
         if (center) {
           chart.value.setOption({ geo: { center, zoom } }, { notMerge: false })
         }
+
+        if (level === 'province' || level === 'city') {
+          const ready = await loadProvinceDetailLayer(focusedProvinceCode.value)
+          if (ready) {
+            chart.value?.resize()
+            updateDetailLayerSeries(0)
+            animateDetailLayerOpacity(0, 1, DETAIL_FADE_DURATION)
+          }
+        }
       }
     } catch (err) {
       console.warn('[useMapChart] 渲染失败', err)
@@ -510,10 +857,19 @@ export function useMapChart(
     if (!chart.value) return
     // 仅更新 series 数据，不触碰 geo 的 center/zoom/layoutCenter/regions
     const scatterData = buildScatterData()
+    if (detailLayerGeo && detailLayerProvinceCode) {
+      const opacity = detailLayerData[0]?.opacity ?? 0
+      detailLayerData = buildProvinceDetailData(
+        detailLayerGeo,
+        detailLayerProvinceCode,
+        opacity,
+      )
+    }
     chart.value.setOption({
       series: [
-        { data: scatterData.filter((d) => !d.isResidence) },
-        { data: scatterData.filter((d) => d.isResidence) },
+        { id: 'province-detail', data: detailLayerData },
+        { id: 'cities', data: scatterData.filter((d) => !d.isResidence) },
+        { id: 'residence', data: scatterData.filter((d) => d.isResidence) },
       ],
     }, { notMerge: false })
   }
@@ -527,31 +883,21 @@ export function useMapChart(
     chart.value.on('click', 'series.cities', (evt: unknown) => {
       const e = evt as { data?: ScatterDataItem }
       if (e.data && callbacks.value.onCityClick) {
-        const city: City = {
-          code: e.data.cityCode,
-          name: e.data.name,
-          provinceCode: '',
-          provinceName: e.data.provinceName,
-          longitude: e.data.value[0],
-          latitude: e.data.value[1],
-          pinyin: '',
-        }
-        callbacks.value.onCityClick(city)
+        callbacks.value.onCityClick(getCityFromScatterData(e.data))
       }
     })
     // 点击居住地城市点位
     chart.value.on('click', 'series.residence', (evt: unknown) => {
       const e = evt as { data?: ScatterDataItem }
       if (e.data && callbacks.value.onCityClick) {
-        const city: City = {
-          code: e.data.cityCode,
-          name: e.data.name,
-          provinceCode: '',
-          provinceName: e.data.provinceName,
-          longitude: e.data.value[0],
-          latitude: e.data.value[1],
-          pinyin: '',
-        }
+        callbacks.value.onCityClick(getCityFromScatterData(e.data))
+      }
+    })
+    chart.value.on('click', 'series.province-detail', (evt: unknown) => {
+      const e = evt as { data?: ProvinceDetailDataItem }
+      if (!e.data || params.value.readonly || flying.value) return
+      const city = getCityByCode(e.data.cityCode)
+      if (city && callbacks.value.onCityClick) {
         callbacks.value.onCityClick(city)
       }
     })
@@ -566,9 +912,13 @@ export function useMapChart(
     })
     // 同步缩放比例
     chart.value.on('georoam', () => {
-      const opt = chart.value?.getOption()
-      const zoom = (opt as { geo?: Array<{ zoom?: number }> })?.geo?.[0]?.zoom
-      if (typeof zoom === 'number') currentZoom.value = zoom
+      if (geoRoamRaf) return
+      geoRoamRaf = requestAnimationFrame(() => {
+        geoRoamRaf = 0
+        const opt = chart.value?.getOption()
+        const zoom = (opt as { geo?: Array<{ zoom?: number }> })?.geo?.[0]?.zoom
+        if (typeof zoom === 'number') currentZoom.value = zoom
+      })
     })
   }
 
@@ -629,6 +979,17 @@ export function useMapChart(
   ): void {
     if (!chart.value) return
     focusedProvinceCode.value = provinceCode
+    const detailLayerPromise = loadProvinceDetailLayer(provinceCode)
+    detailLayerPromise.then((ready) => {
+      if (
+        ready &&
+        focusedProvinceCode.value === provinceCode &&
+        (params.value.level === 'province' || params.value.level === 'city')
+      ) {
+        const opacity = detailLayerData[0]?.opacity ?? 0
+        updateDetailLayerSeries(opacity)
+      }
+    })
 
     // 省级聚焦（无 options）→ 自适应计算；市级聚焦（有 options）→ 使用传入值
     let center: [number, number] | null
@@ -670,6 +1031,22 @@ export function useMapChart(
     flyTimer = setTimeout(() => {
       flying.value = false
       animateRegionsDim(1, DIM_OPACITY, REGIONS_FADE_DURATION)
+      detailLayerPromise.then((ready) => {
+        if (
+          ready &&
+          focusedProvinceCode.value === provinceCode &&
+          (params.value.level === 'province' || params.value.level === 'city')
+        ) {
+          chart.value?.resize()
+          const opacity = detailLayerData[0]?.opacity ?? 0
+          if (opacity < 1) {
+            updateDetailLayerSeries(opacity)
+            animateDetailLayerOpacity(opacity, 1, DETAIL_FADE_DURATION)
+          } else {
+            updateDetailLayerSeries(1)
+          }
+        }
+      })
     }, 1000)
   }
 
@@ -679,6 +1056,7 @@ export function useMapChart(
   function unfocus(): void {
     if (!chart.value) return
     focusedProvinceCode.value = null
+    hideProvinceDetailLayer()
 
     flying.value = true
     if (flyTimer) clearTimeout(flyTimer)
@@ -735,16 +1113,20 @@ export function useMapChart(
     bindEvents()
     // 容器尺寸变化时：先 resize 实例，若当前有聚焦省份则重新计算自适应缩放
     resizeObserver = new ResizeObserver(() => {
-      chart.value?.resize()
-      if (focusedProvinceCode.value && !flying.value) {
-        const adaptive = calculateAdaptiveFocus(focusedProvinceCode.value)
-        if (adaptive && chart.value) {
-          chart.value.setOption(
-            { geo: { center: adaptive.center, zoom: adaptive.zoom } },
-            { notMerge: false },
-          )
+      if (resizeRaf) return
+      resizeRaf = requestAnimationFrame(() => {
+        resizeRaf = 0
+        chart.value?.resize()
+        if (focusedProvinceCode.value && !flying.value) {
+          const adaptive = calculateAdaptiveFocus(focusedProvinceCode.value)
+          if (adaptive && chart.value) {
+            chart.value.setOption(
+              { geo: { center: adaptive.center, zoom: adaptive.zoom } },
+              { notMerge: false },
+            )
+          }
         }
-      }
+      })
     })
     resizeObserver.observe(containerRef.value)
   }
@@ -755,6 +1137,14 @@ export function useMapChart(
   function disposeChart(): void {
     resizeObserver?.disconnect()
     resizeObserver = null
+    if (geoRoamRaf) {
+      cancelAnimationFrame(geoRoamRaf)
+      geoRoamRaf = 0
+    }
+    if (resizeRaf) {
+      cancelAnimationFrame(resizeRaf)
+      resizeRaf = 0
+    }
     chart.value?.dispose()
     chart.value = null
   }

@@ -18,20 +18,20 @@ export const TIER_COLORS: Record<VisitCountTier, string> = {
 export const MAP_COLORS = {
   /** 居住地城市标识色 - 冷蓝 */
   residence: '#3B82F6',
-  /** 未点亮省份色块 - 冷灰白（清爽干净，与 zinc 主题一致） */
-  unlit: '#F4F4F5',
-  /** 页面背景 - 与地图区 zinc-50/60 底色融合 */
-  background: '#FAFAFA',
-  /** 省份边界色 - 比填充略深的冷灰 */
-  borderColor: '#E4E4E7',
+  /** 未点亮省份色块 - 带一点冷蓝的灰白，避免地图像水印一样消失 */
+  unlit: '#F1F5F9',
+  /** 地图画布背景 - 和页面白底拉开轻微层次 */
+  background: '#F8FAFC',
+  /** 省份边界色 - 提升对比度，让行政区轮廓更清晰 */
+  borderColor: '#CBD5E1',
   /** 已点亮省份填充 - 柔和暖桃色 */
-  litFill: '#FFE0CC',
+  litFill: '#FFD8BF',
   /** 省份微妙阴影色 - 中性冷调，营造深度感 */
-  shadowColor: 'rgba(0, 0, 0, 0.04)',
-  /** 聚焦省份高亮边框 - 主暖橙 */
-  focusBorder: '#FF6B35',
+  shadowColor: 'rgba(15, 23, 42, 0.075)',
+  /** 聚焦省份高亮边框 - 低饱和暖铜色，避免大面积描边过刺眼 */
+  focusBorder: '#B9825A',
   /** 悬停省份高亮填充 */
-  hoverFill: '#FAFAFA',
+  hoverFill: '#EAF2FF',
 } as const
 
 /**

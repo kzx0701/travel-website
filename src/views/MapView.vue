@@ -59,25 +59,29 @@ const filteredCities = computed<City[]>(() => {
 })
 
 // ---- 事件处理 ----
-function handleSearchSelect(city: City): void {
-  // 搜索选中：下钻到该城市市级 + 选中城市 + 切到详情态
+function focusAndSelectCity(city: City): void {
   mapStore.drillDown(city.code)
   mapStore.selectCity(city)
 }
 
+function handleSearchSelect(city: City): void {
+  // 搜索选中：下钻到该城市市级 + 选中城市 + 切到详情态
+  focusAndSelectCity(city)
+}
+
 function handleCityClick(city: City): void {
-  // 地图点击城市：选中并切到详情态
-  mapStore.selectCity(city)
+  // 地图点击城市：下钻到城市级 + 选中并切到详情态
+  focusAndSelectCity(city)
 }
 
 function handleCityListSelect(city: City): void {
-  // 左侧列表点击城市名：选中并切到详情态
-  mapStore.selectCity(city)
+  // 左侧列表点击城市名：下钻到城市级 + 选中并切到详情态
+  focusAndSelectCity(city)
 }
 
 function handleCityListAdd(city: City): void {
-  // 左侧列表 "+" 按钮：选中城市并切到表单态
-  mapStore.selectCity(city)
+  // 左侧列表 "+" 按钮：下钻到城市级 + 选中城市并切到表单态
+  focusAndSelectCity(city)
   mapStore.rightPanelMode = 'form'
 }
 
