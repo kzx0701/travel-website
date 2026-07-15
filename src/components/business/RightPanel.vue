@@ -62,11 +62,6 @@ const selectedCityCount = computed(
 /** 是否为该城市的第一条记录（决定按钮文案"点亮城市" vs "添加记录"） */
 const isFirstRecord = computed(() => selectedCityRecords.value.length === 0)
 
-/** 表单模式标题 */
-const formTitle = computed(() =>
-  editingRecord.value ? '编辑记录' : '添加到达记录',
-)
-
 function handleNavigate(level: MapLevel): void {
   mapStore.navigateBack(level)
 }
@@ -155,68 +150,12 @@ function handleRecordEdit(record: VisitRecord): void {
 </script>
 
 <template>
-  <!-- 默认态 -->
-  <div
-    v-if="mapStore.rightPanelMode === 'default'"
-    class="flex h-full flex-col"
-  >
-    <div class="border-b border-slate-100 px-4 py-2.5">
-      <MapBreadcrumb
-        :level="mapStore.currentLevel"
-        :province-name="mapStore.breadcrumbNames.provinceName"
-        :city-name="mapStore.breadcrumbNames.cityName"
-        @navigate="handleNavigate"
-      />
-    </div>
-    <div
-      class="flex flex-1 flex-col items-center justify-center px-8 text-center"
+  <div class="flex h-full flex-col">
+    <!-- 顶部固定：城市信息头（detail / form 态均固定显示） -->
+    <header
+      v-if="mapStore.selectedCity"
+      class="shrink-0 border-b border-slate-100 px-5 py-4"
     >
-      <div
-        class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted"
-      >
-        <MapPin class="h-7 w-7 text-muted-foreground/60" />
-      </div>
-      <p class="text-sm font-medium text-slate-600">
-        点击地图上的城市查看详情
-      </p>
-      <p class="mt-1 text-xs text-slate-400">或使用左侧搜索快速定位</p>
-    </div>
-
-    <!-- 常驻添加记录按钮 -->
-    <div class="shrink-0 px-4 pb-3">
-      <Button class="w-full" @click="handleAddRecord">
-        <Plus class="h-4 w-4" />
-        添加到达记录
-      </Button>
-      <p v-if="!mapStore.selectedCity" class="mt-1.5 text-center text-xs text-slate-400">
-        请先选择城市
-      </p>
-    </div>
-
-    <!-- 未设置居住地引导提示 -->
-    <Button
-      v-if="hasNoResidence"
-      variant="outline"
-      class="mb-4 mx-4 flex h-auto items-center gap-3 px-4 py-3 text-left"
-      @click="handleGotoSettings"
-    >
-      <MapPin class="h-5 w-5 shrink-0 text-primary" />
-      <div class="min-w-0 flex-1">
-        <p class="text-sm font-medium text-primary">未设置居住地</p>
-        <p class="mt-0.5 text-xs text-muted-foreground">
-          前往设置，居住地所在城市将不被点亮
-        </p>
-      </div>
-      <ChevronRight class="h-4 w-4 shrink-0 text-muted-foreground/60" />
-    </Button>
-  </div>
-
-  <!-- 城市详情态 -->
-  <div
-    v-else-if="mapStore.rightPanelMode === 'detail' && mapStore.selectedCity"
-    class="flex h-full flex-col"
-  >
-    <div class="shrink-0 border-b border-slate-100 px-5 py-4">
       <div class="flex items-start justify-between">
         <div>
           <h2 class="text-xl font-bold tracking-tight text-slate-800">
@@ -247,61 +186,142 @@ function handleRecordEdit(record: VisitRecord): void {
       >
         这是你的居住地所在城市，无需点亮
       </div>
+    </header>
 
-      <!-- 非居住地才显示添加按钮 -->
-      <Button
-        v-else
-        class="mt-3 w-full"
-        @click="switchToCreateMode"
-      >
-        <Plus class="h-4 w-4" />
-        添加到达记录
-      </Button>
-    </div>
+    <!-- 中间内容区：切换时顶部保持不动，仅内容过渡 -->
+    <div class="relative flex-1 overflow-hidden">
+      <Transition name="content-slide" mode="out-in">
+        <!-- 默认态（未选择城市） -->
+        <div
+          v-if="!mapStore.selectedCity"
+          key="default"
+          class="flex h-full flex-col"
+        >
+          <div class="border-b border-slate-100 px-4 py-2.5">
+            <MapBreadcrumb
+              :level="mapStore.currentLevel"
+              :province-name="mapStore.breadcrumbNames.provinceName"
+              :city-name="mapStore.breadcrumbNames.cityName"
+              @navigate="handleNavigate"
+            />
+          </div>
+          <div
+            class="flex flex-1 flex-col items-center justify-center px-8 text-center"
+          >
+            <div
+              class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted"
+            >
+              <MapPin class="h-7 w-7 text-muted-foreground/60" />
+            </div>
+            <p class="text-sm font-medium text-slate-600">
+              点击地图上的城市查看详情
+            </p>
+            <p class="mt-1 text-xs text-slate-400">或使用左侧搜索快速定位</p>
+          </div>
 
-    <!-- 记录列表 -->
-    <div class="flex-1 overflow-y-auto px-4 py-3">
-      <RecordList
-        :records="selectedCityRecords"
-        :loading="visitRecordStore.loading"
-        @edit="handleRecordEdit"
-        @delete="handleRecordDelete"
-      />
-    </div>
-  </div>
+          <!-- 常驻添加记录按钮 -->
+          <div class="shrink-0 px-4 pb-3">
+            <Button class="w-full" @click="handleAddRecord">
+              <Plus class="h-4 w-4" />
+              添加到达记录
+            </Button>
+            <p class="mt-1.5 text-center text-xs text-slate-400">
+              请先选择城市
+            </p>
+          </div>
 
-  <!-- 记录表单态 -->
-  <div
-    v-else-if="mapStore.rightPanelMode === 'form' && mapStore.selectedCity"
-    class="flex h-full flex-col"
-  >
-    <RecordForm
-      :key="editingRecord?.id ?? 'create'"
-      :city="mapStore.selectedCity"
-      :record="editingRecord ?? undefined"
-      :is-first="isFirstRecord"
-      @submit="handleFormSubmit"
-      @cancel="handleFormCancel"
-    />
-  </div>
+          <!-- 未设置居住地引导提示 -->
+          <Button
+            v-if="hasNoResidence"
+            variant="outline"
+            class="mb-4 mx-4 flex h-auto items-center gap-3 px-4 py-3 text-left"
+            @click="handleGotoSettings"
+          >
+            <MapPin class="h-5 w-5 shrink-0 text-primary" />
+            <div class="min-w-0 flex-1">
+              <p class="text-sm font-medium text-primary">未设置居住地</p>
+              <p class="mt-0.5 text-xs text-muted-foreground">
+                前往设置，居住地所在城市将不被点亮
+              </p>
+            </div>
+            <ChevronRight class="h-4 w-4 shrink-0 text-muted-foreground/60" />
+          </Button>
+        </div>
 
-  <!-- 兜底：form 态但无选中城市，回退到默认态 -->
-  <div v-else class="flex h-full flex-col">
-    <div class="border-b border-slate-100 px-4 py-2.5">
-      <span class="text-sm font-semibold text-slate-700">{{ formTitle }}</span>
-    </div>
-    <div
-      class="flex flex-1 flex-col items-center justify-center px-8 text-center"
-    >
-      <p class="text-sm text-slate-400">请先选择城市</p>
-      <Button
-        variant="outline"
-        size="sm"
-        class="mt-3"
-        @click="handleBackToDetail"
-      >
-        返回
-      </Button>
+        <!-- 城市详情态：列表 + 底部添加按钮 -->
+        <div
+          v-else-if="mapStore.rightPanelMode === 'detail'"
+          key="detail"
+          class="flex h-full flex-col"
+        >
+          <div class="flex-1 overflow-y-auto px-4 py-3">
+            <RecordList
+              :records="selectedCityRecords"
+              :loading="visitRecordStore.loading"
+              @edit="handleRecordEdit"
+              @delete="handleRecordDelete"
+            />
+          </div>
+
+          <!-- 添加到达记录按钮：固定在列表末尾 -->
+          <div v-if="!isResidenceCity" class="shrink-0 px-4 pb-3">
+            <Button class="w-full" @click="switchToCreateMode">
+              <Plus class="h-4 w-4" />
+              添加到达记录
+            </Button>
+          </div>
+        </div>
+
+        <!-- 记录表单态：编辑/新增 -->
+        <div
+          v-else-if="mapStore.rightPanelMode === 'form'"
+          key="form"
+          class="h-full overflow-y-auto"
+        >
+          <RecordForm
+            :key="editingRecord?.id ?? 'create'"
+            :city="mapStore.selectedCity"
+            :record="editingRecord ?? undefined"
+            :is-first="isFirstRecord"
+            @submit="handleFormSubmit"
+            @cancel="handleFormCancel"
+          />
+        </div>
+
+        <!-- 兜底 -->
+        <div
+          v-else
+          key="fallback"
+          class="flex h-full flex-col items-center justify-center px-8 text-center"
+        >
+          <p class="text-sm text-slate-400">请先选择城市</p>
+          <Button
+            variant="outline"
+            size="sm"
+            class="mt-3"
+            @click="handleBackToDetail"
+          >
+            返回
+          </Button>
+        </div>
+      </Transition>
     </div>
   </div>
 </template>
+
+<style scoped>
+.content-slide-enter-active,
+.content-slide-leave-active {
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.content-slide-enter-from {
+  opacity: 0;
+  transform: translateX(16px) scale(0.99);
+}
+
+.content-slide-leave-to {
+  opacity: 0;
+  transform: translateX(-16px) scale(0.99);
+}
+</style>

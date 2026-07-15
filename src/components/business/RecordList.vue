@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { Calendar, Pencil, Trash2 } from '@lucide/vue'
+import { Calendar, Trash2 } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
@@ -10,8 +10,9 @@ import type { VisitRecord } from '@/types'
  * RecordList - 到达记录列表
  *
  * 按到达日期倒序展示记录（日期范围按起始日期排序）。
- * 每条记录显示：日期（范围显示起止）/ 目的标签 / 备注（淡灰小字）。
- * hover 显示编辑/删除图标按钮；删除前二次确认（声明式 AlertDialog）。
+ * 每条记录两行布局：第一行时间+目的标签，第二行备注+删除按钮。
+ * 点击卡片进入编辑，删除按钮 hover 出现并阻止冒泡。
+ * 删除前二次确认（声明式 AlertDialog）。
  *
  * Props:
  *  - records: 记录列表
@@ -96,60 +97,47 @@ function handleCancelDelete(): void {
       <div
         v-for="record in sortedRecords"
         :key="record.id"
-        class="group relative overflow-hidden rounded-xl border border-border/40 bg-card/50 px-3 py-2.5 transition-colors hover:border-border hover:bg-card"
+        class="group relative cursor-pointer overflow-hidden rounded-xl border border-border/40 bg-card/50 px-3 py-2.5 transition-all duration-200 ease-out hover:border-primary/30 hover:bg-card hover:shadow-sm active:scale-[0.99]"
+        @click="handleEdit(record)"
       >
-        <div class="flex items-start justify-between gap-2">
-          <div class="min-w-0 flex-1">
-            <!-- 日期：单行，空间不足时整行换行而非单个日期折行 -->
-            <div class="text-sm font-medium text-foreground">
-              <span class="inline-flex flex-wrap items-center gap-1">
-                <span class="tabular-nums whitespace-nowrap">{{ record.startDate }}</span>
-                <template v-if="record.endDate">
-                  <span class="text-muted-foreground">—</span>
-                  <span class="tabular-nums whitespace-nowrap">{{ record.endDate }}</span>
-                </template>
-              </span>
-            </div>
-            <!-- 备注 -->
-            <p
-              v-if="record.note"
-              class="mt-1 truncate text-xs text-muted-foreground"
-              :title="record.note"
-            >
-              {{ record.note }}
-            </p>
+        <!-- 第一行：时间 + 目的标签 -->
+        <div class="flex items-center justify-between gap-2">
+          <div class="min-w-0 text-sm font-medium text-foreground">
+            <span class="inline-flex flex-wrap items-center gap-1">
+              <span class="tabular-nums whitespace-nowrap">{{ record.startDate }}</span>
+              <template v-if="record.endDate">
+                <span class="text-muted-foreground">—</span>
+                <span class="tabular-nums whitespace-nowrap">{{ record.endDate }}</span>
+              </template>
+            </span>
           </div>
-
-          <!-- hover 操作 -->
-          <div class="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100">
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              class="hover:bg-background hover:text-primary"
-              title="编辑"
-              @click="handleEdit(record)"
-            >
-              <Pencil class="size-3.5" />
-            </Button>
-            <Button
-              variant="ghost"
-              size="icon-xs"
-              class="hover:bg-background hover:text-destructive"
-              title="删除"
-              @click="handleDelete(record)"
-            >
-              <Trash2 class="size-3.5" />
-            </Button>
-          </div>
-        </div>
-
-        <!-- 底部：目的标签独立一行 -->
-        <div class="mt-1.5 flex items-center gap-1.5">
           <span
             class="inline-flex shrink-0 items-center rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"
           >
             {{ record.purpose }}
           </span>
+        </div>
+
+        <!-- 第二行：备注 + 删除按钮 -->
+        <div class="mt-1.5 flex items-center justify-between gap-2">
+          <p
+            v-if="record.note"
+            class="min-w-0 flex-1 truncate text-xs text-muted-foreground"
+            :title="record.note"
+          >
+            {{ record.note }}
+          </p>
+          <p v-else class="min-w-0 flex-1 truncate text-xs text-muted-foreground/50">无备注</p>
+
+          <Button
+            variant="ghost"
+            size="icon-xs"
+            class="shrink-0 opacity-0 transition-opacity group-hover:opacity-100 hover:bg-background hover:text-destructive"
+            title="删除"
+            @click.stop="handleDelete(record)"
+          >
+            <Trash2 class="size-3.5" />
+          </Button>
         </div>
       </div>
     </div>
