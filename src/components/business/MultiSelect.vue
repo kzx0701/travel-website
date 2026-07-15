@@ -118,7 +118,7 @@ function toggle(value: string): void {
             +{{ overflowCount }}
           </span>
         </span>
-        <ChevronsUpDown class="h-4 w-4 shrink-0 opacity-50" />
+        <ChevronsUpDown class="size-4 shrink-0 opacity-50" />
       </Button>
     </PopoverTrigger>
     <PopoverContent class="w-[--reka-popper-anchor-width] p-0" align="start">
@@ -134,7 +134,7 @@ function toggle(value: string): void {
               @select="toggle(opt.value)"
             >
               <div
-                class="flex h-4 w-4 items-center justify-center rounded-sm border border-primary"
+                class="flex size-4 items-center justify-center rounded-sm border border-primary"
                 :class="
                   selectedSet.has(opt.value)
                     ? 'bg-primary text-primary-foreground'
@@ -143,7 +143,7 @@ function toggle(value: string): void {
               >
                 <Check
                   v-if="selectedSet.has(opt.value)"
-                  class="h-3 w-3"
+                  class="size-3"
                 />
               </div>
               <span class="truncate">{{ opt.label }}</span>

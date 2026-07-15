@@ -137,7 +137,7 @@ function cancelCreate(): void {
         <span class="truncate">
           {{ modelValue || '请选择出行目的' }}
         </span>
-        <ChevronsUpDown class="h-4 w-4 shrink-0 opacity-50" />
+        <ChevronsUpDown class="size-4 shrink-0 opacity-50" />
       </Button>
     </PopoverTrigger>
     <PopoverContent class="w-[--reka-popper-anchor-width] p-0" align="start">
@@ -156,7 +156,7 @@ function cancelCreate(): void {
               @select="selectValue(cat.name)"
             >
               <Check
-                class="h-4 w-4"
+                class="size-4"
                 :class="modelValue === cat.name ? 'opacity-100' : 'opacity-0'"
               />
               <span>{{ cat.name }}</span>
@@ -173,7 +173,7 @@ function cancelCreate(): void {
               @select="selectValue(cat.name)"
             >
               <Check
-                class="h-4 w-4"
+                class="size-4"
                 :class="modelValue === cat.name ? 'opacity-100' : 'opacity-0'"
               />
               <span>{{ cat.name }}</span>
@@ -185,7 +185,7 @@ function cancelCreate(): void {
               :value="CREATE_SENTINEL"
               @select="handleCreateSelect"
             >
-              <Plus class="h-4 w-4 text-primary" />
+              <Plus class="size-4 text-primary" />
               <span class="text-primary">新建分类</span>
             </CommandItem>
           </CommandGroup>

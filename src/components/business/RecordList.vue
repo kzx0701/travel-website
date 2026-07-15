@@ -72,7 +72,7 @@ function handleCancelDelete(): void {
       <div
         v-for="i in 3"
         :key="i"
-        class="rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-2.5"
+        class="rounded-xl border border-border/40 bg-card/50 px-3 py-2.5"
       >
         <div class="flex items-center justify-between">
           <Skeleton class="h-3 w-20" />
@@ -87,8 +87,8 @@ function handleCancelDelete(): void {
       v-else-if="sortedRecords.length === 0"
       class="flex flex-col items-center justify-center py-10 text-center"
     >
-      <Calendar class="mb-3 h-10 w-10 text-muted-foreground/40" :stroke-width="1.5" />
-      <p class="text-sm text-slate-400">还没有到达记录，点击上方添加</p>
+      <Calendar class="mb-3 size-10 text-muted-foreground/40" :stroke-width="1.5" />
+      <p class="text-sm text-muted-foreground">还没有到达记录，点击上方添加</p>
     </div>
 
     <!-- 记录列表 -->
@@ -96,55 +96,60 @@ function handleCancelDelete(): void {
       <div
         v-for="record in sortedRecords"
         :key="record.id"
-        class="group rounded-lg border border-slate-100 bg-slate-50/50 px-3 py-2.5 transition-colors hover:border-slate-200 hover:bg-slate-50"
+        class="group relative overflow-hidden rounded-xl border border-border/40 bg-card/50 px-3 py-2.5 transition-colors hover:border-border hover:bg-card"
       >
         <div class="flex items-start justify-between gap-2">
-          <!-- 日期 -->
           <div class="min-w-0 flex-1">
-            <div class="flex items-baseline gap-1 text-sm font-medium text-slate-700">
-              <span>{{ record.startDate }}</span>
-              <span v-if="record.endDate" class="text-slate-400">— {{ record.endDate }}</span>
+            <!-- 日期：单行，空间不足时整行换行而非单个日期折行 -->
+            <div class="text-sm font-medium text-foreground">
+              <span class="inline-flex flex-wrap items-center gap-1">
+                <span class="tabular-nums whitespace-nowrap">{{ record.startDate }}</span>
+                <template v-if="record.endDate">
+                  <span class="text-muted-foreground">—</span>
+                  <span class="tabular-nums whitespace-nowrap">{{ record.endDate }}</span>
+                </template>
+              </span>
             </div>
             <!-- 备注 -->
             <p
               v-if="record.note"
-              class="mt-1 truncate text-xs text-slate-400"
+              class="mt-1 truncate text-xs text-muted-foreground"
               :title="record.note"
             >
               {{ record.note }}
             </p>
           </div>
 
-          <div class="flex items-center gap-1.5">
-            <!-- 目的标签 -->
-            <span
-              class="inline-flex shrink-0 items-center rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"
+          <!-- hover 操作 -->
+          <div class="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100">
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              class="hover:bg-background hover:text-primary"
+              title="编辑"
+              @click="handleEdit(record)"
             >
-              {{ record.purpose }}
-            </span>
-
-            <!-- hover 操作 -->
-            <div class="flex shrink-0 items-center opacity-0 transition-opacity group-hover:opacity-100">
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                class="size-6 hover:bg-background hover:text-primary"
-                title="编辑"
-                @click="handleEdit(record)"
-              >
-                <Pencil class="h-3.5 w-3.5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon-sm"
-                class="size-6 hover:bg-background hover:text-destructive"
-                title="删除"
-                @click="handleDelete(record)"
-              >
-                <Trash2 class="h-3.5 w-3.5" />
-              </Button>
-            </div>
+              <Pencil class="size-3.5" />
+            </Button>
+            <Button
+              variant="ghost"
+              size="icon-xs"
+              class="hover:bg-background hover:text-destructive"
+              title="删除"
+              @click="handleDelete(record)"
+            >
+              <Trash2 class="size-3.5" />
+            </Button>
           </div>
+        </div>
+
+        <!-- 底部：目的标签独立一行 -->
+        <div class="mt-1.5 flex items-center gap-1.5">
+          <span
+            class="inline-flex shrink-0 items-center rounded-full bg-secondary px-2 py-0.5 text-xs text-secondary-foreground"
+          >
+            {{ record.purpose }}
+          </span>
         </div>
       </div>
     </div>

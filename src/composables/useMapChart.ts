@@ -47,6 +47,8 @@ interface ScatterDataItem {
     color: string
     borderColor?: string
     borderWidth?: number
+    shadowColor?: string
+    shadowBlur?: number
   }
   symbolSize: number
 }
@@ -151,6 +153,8 @@ export function useMapChart(
           color: isResidence ? MAP_COLORS.residence : getVisitColor(visitCount),
           borderColor: '#FFFFFF',
           borderWidth: 1.5,
+          shadowColor: isResidence ? 'rgba(59, 130, 246, 0.45)' : 'rgba(255, 107, 53, 0.45)',
+          shadowBlur: 8,
         },
         symbolSize: isResidence ? 14 : getSymbolSize(visitCount),
       })
@@ -172,6 +176,8 @@ export function useMapChart(
             color: MAP_COLORS.residence,
             borderColor: '#FFFFFF',
             borderWidth: 1.8,
+            shadowColor: 'rgba(59, 130, 246, 0.45)',
+            shadowBlur: 8,
           },
           symbolSize: 14,
         })
@@ -380,33 +386,54 @@ export function useMapChart(
 
   /**
    * 根据到达次数计算点位大小
+   * - 全国视图（zoom≤1.5）：放大便于识别
+   * - 聚焦视图（zoom≥3）：缩小，避免与行政区域填充重叠
    */
   function getSymbolSize(visitCount: number): number {
     const tier = getVisitTier(visitCount)
-    if (tier === 'high') return 12
-    if (tier === 'mid') return 10
-    return 8
+    const zoomFactor = currentZoom.value <= 1.5 ? 1.2 : currentZoom.value >= 3 ? 0.75 : 1
+    if (tier === 'high') return Math.round(14 * zoomFactor)
+    if (tier === 'mid') return Math.round(12 * zoomFactor)
+    return Math.round(10 * zoomFactor)
+  }
+
+  /**
+   * 根据到达次数返回省份详情层的填充色（带透明度）
+   */
+  function getVisitFillColor(visitCount: number, opacity: number): string {
+    const tier = getVisitTier(visitCount)
+    if (tier === 'high') return `rgba(224, 90, 32, ${0.36 * opacity})`
+    if (tier === 'mid') return `rgba(255, 107, 53, ${0.32 * opacity})`
+    return `rgba(255, 179, 128, ${0.28 * opacity})`
+  }
+
+  /**
+   * 根据到达次数返回省份详情层的描边色（带透明度）
+   */
+  function getVisitStrokeColor(visitCount: number, opacity: number): string {
+    const tier = getVisitTier(visitCount)
+    if (tier === 'high') return `rgba(224, 90, 32, ${0.85 * opacity})`
+    if (tier === 'mid') return `rgba(255, 107, 53, ${0.80 * opacity})`
+    return `rgba(185, 130, 90, ${0.75 * opacity})`
   }
 
   /**
    * 构建 geo.regions（所有省份，带聚焦感知样式）
+   *
+   * 说明：省份面只表示行政区划，不因为城市被点亮而变色。
+   * 城市是否点亮通过 scatter 系列的城市点表示。
+   * 聚焦省份时：聚焦省份正常高亮显示，其他省份暗化。
+   *
    * @param dimOpacity 非聚焦省份的 opacity（1 = 正常，DIM_OPACITY = 完全暗化）
    *                   用于渐变动画中插值，默认 DIM_OPACITY
    */
   function buildGeoRegions(dimOpacity: number = DIM_OPACITY) {
-    const { litCities } = params.value
-    const countByProvince = new Map<string, number>()
-    litCities.forEach((c) => {
-      countByProvince.set(c.provinceCode, (countByProvince.get(c.provinceCode) ?? 0) + 1)
-    })
-
     const focusedCode = focusedProvinceCode.value
     const focusedName = focusedCode
       ? provinces.find((p) => p.code === focusedCode)?.name
       : null
 
     return provinces.map((p) => {
-      const visitCount = countByProvince.get(p.code) ?? 0
       const isFocused = focusedName === p.name
 
       // 有聚焦省份且当前不是聚焦省份 → 暗化
@@ -421,12 +448,12 @@ export function useMapChart(
           },
         }
       }
-      // 聚焦省份外轮廓由省级 GeoJSON 覆盖层绘制，避免和全国 GeoJSON 轮廓不一致
+      // 聚焦省份：正常高亮显示
       if (isFocused) {
         return {
           name: p.name,
           itemStyle: {
-            areaColor: visitCount > 0 ? MAP_COLORS.litFill : MAP_COLORS.unlit,
+            areaColor: MAP_COLORS.unlit,
             borderColor: 'rgba(203, 213, 225, 0.55)',
             borderWidth: 0.8,
             shadowColor: 'rgba(15, 23, 42, 0.06)',
@@ -435,11 +462,11 @@ export function useMapChart(
           },
         }
       }
-      // 无聚焦 → 正常样式（已点亮省份用暖色，未点亮用暖灰白）
+      // 无聚焦：所有省份统一底色
       return {
         name: p.name,
         itemStyle: {
-          areaColor: visitCount > 0 ? MAP_COLORS.litFill : MAP_COLORS.unlit,
+          areaColor: MAP_COLORS.unlit,
           borderColor: MAP_COLORS.borderColor,
           borderWidth: 1,
           shadowColor: MAP_COLORS.shadowColor,
@@ -521,9 +548,11 @@ export function useMapChart(
    * mapName 为 null 时降级为无底图的纯点位渲染（使用 cartesian2d 坐标系）
    */
   function buildOption(mapName: string | null): echarts.EChartsCoreOption {
-    const { readonly: isReadonly } = params.value
+    const { readonly: isReadonly, level } = params.value
     const scatterData = buildScatterData()
     const hasMap = !!mapName
+    // 省级/市级视图下由 province-detail 区域填充表达点亮，隐藏 scatter 中心点
+    const showScatterPoints = level === 'country'
 
     const tooltipFormatter = (p: unknown) => {
       const evt = p as { name?: string; data?: ScatterDataItem | ProvinceDetailDataItem }
@@ -648,25 +677,26 @@ export function useMapChart(
                 : undefined
             if (!item || item.opacity <= 0) return { type: 'group', children: [] }
 
+            // 省份视图下：已点亮城市填充行政区域，未点亮城市透明；选中/居住地优先显示蓝色
             const fillColor = item.isSelected
               ? `rgba(59, 130, 246, ${0.22 * item.opacity})`
               : item.isResidence
-                ? `rgba(59, 130, 246, ${0.08 * item.opacity})`
+                ? `rgba(59, 130, 246, ${0.12 * item.opacity})`
                 : item.isLit
-                  ? `rgba(255, 179, 128, ${0.16 * item.opacity})`
-                  : `rgba(248, 250, 252, ${0.08 * item.opacity})`
+                  ? getVisitFillColor(item.visitCount, item.opacity)
+                  : 'rgba(248, 250, 252, 0)'
             const strokeColor = item.isSelected
               ? `rgba(37, 99, 235, ${0.95 * item.opacity})`
               : item.isResidence
                 ? `rgba(59, 130, 246, ${0.72 * item.opacity})`
                 : item.isLit
-                  ? `rgba(185, 130, 90, ${0.62 * item.opacity})`
-                  : `rgba(71, 85, 105, ${0.36 * item.opacity})`
+                  ? getVisitStrokeColor(item.visitCount, item.opacity)
+                  : `rgba(148, 163, 184, ${0.28 * item.opacity})`
             const lineWidth = item.isSelected
               ? 2.2
               : item.isLit || item.isResidence
-                ? 1.3
-                : 0.9
+                ? 1.4
+                : 0.8
 
             return {
               type: 'group',
@@ -687,8 +717,8 @@ export function useMapChart(
                 emphasis: {
                   style: {
                     fill: item.isSelected
-                      ? `rgba(59, 130, 246, ${0.28 * item.opacity})`
-                      : `rgba(255, 179, 128, ${0.18 * item.opacity})`,
+                      ? `rgba(59, 130, 246, ${0.18 * item.opacity})`
+                      : `rgba(255, 179, 128, ${0.08 * item.opacity})`,
                     stroke: item.isSelected
                       ? `rgba(37, 99, 235, ${0.98 * item.opacity})`
                       : `rgba(185, 130, 90, ${0.88 * item.opacity})`,
@@ -705,18 +735,17 @@ export function useMapChart(
           type: 'scatter',
           coordinateSystem: 'geo',
           data: scatterData.filter((d) => !d.isResidence),
-          symbol:
-            'path://M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5a2.5 2.5 0 010-5 2.5 2.5 0 010 5z',
-          symbolKeepAspect: true,
+          symbol: 'circle',
           label: {
             show: false,
           },
           itemStyle: {
-            shadowColor: 'rgba(255, 107, 53, 0.18)',
-            shadowBlur: 3,
+            shadowColor: 'rgba(255, 107, 53, 0.45)',
+            shadowBlur: 8,
+            opacity: showScatterPoints ? 1 : 0,
           },
           emphasis: {
-            scale: 1.4,
+            scale: 1.5,
             label: {
               show: true,
               formatter: (p: unknown) => (p as { data?: ScatterDataItem }).data?.name ?? '',
@@ -760,8 +789,9 @@ export function useMapChart(
             color: MAP_COLORS.residence,
             borderColor: '#FFFFFF',
             borderWidth: 2,
-            shadowColor: 'rgba(59, 130, 246, 0.22)',
-            shadowBlur: 4,
+            shadowColor: 'rgba(59, 130, 246, 0.32)',
+            shadowBlur: 5,
+            opacity: showScatterPoints ? 1 : 0,
           },
           z: 5,
         },
@@ -865,11 +895,27 @@ export function useMapChart(
         opacity,
       )
     }
+    // 省级/市级视图下由 province-detail 区域填充表达点亮，隐藏 scatter 中心点
+    const showScatterPoints = params.value.level === 'country'
     chart.value.setOption({
       series: [
         { id: 'province-detail', data: detailLayerData },
-        { id: 'cities', data: scatterData.filter((d) => !d.isResidence) },
-        { id: 'residence', data: scatterData.filter((d) => d.isResidence) },
+        { id: 'cities', data: scatterData.filter((d) => !d.isResidence), itemStyle: { opacity: showScatterPoints ? 1 : 0 } },
+        { id: 'residence', data: scatterData.filter((d) => d.isResidence), itemStyle: { opacity: showScatterPoints ? 1 : 0 } },
+      ],
+    }, { notMerge: false })
+  }
+
+  /**
+   * 单独更新 scatter 系列显隐（不重建数据，用于层级切换时）
+   */
+  function updateScatterOpacity(): void {
+    if (!chart.value) return
+    const showScatterPoints = params.value.level === 'country'
+    chart.value.setOption({
+      series: [
+        { id: 'cities', itemStyle: { opacity: showScatterPoints ? 1 : 0 } },
+        { id: 'residence', itemStyle: { opacity: showScatterPoints ? 1 : 0 } },
       ],
     }, { notMerge: false })
   }
@@ -910,14 +956,23 @@ export function useMapChart(
       if (!e.name) return
       callbacks.value.onRegionClick?.(e.name, e.name)
     })
-    // 同步缩放比例
+    // 同步缩放比例，并在缩放档位变化时刷新点位大小
     chart.value.on('georoam', () => {
       if (geoRoamRaf) return
       geoRoamRaf = requestAnimationFrame(() => {
         geoRoamRaf = 0
         const opt = chart.value?.getOption()
         const zoom = (opt as { geo?: Array<{ zoom?: number }> })?.geo?.[0]?.zoom
-        if (typeof zoom === 'number') currentZoom.value = zoom
+        if (typeof zoom !== 'number') return
+        const prevZoom = currentZoom.value
+        currentZoom.value = zoom
+        // 只在跨越点位大小阈值时更新 series，避免频繁重建
+        const crossed =
+          (prevZoom <= 1.5 && zoom > 1.5) ||
+          (prevZoom > 1.5 && zoom <= 1.5) ||
+          (prevZoom <= 3 && zoom > 3) ||
+          (prevZoom > 3 && zoom <= 3)
+        if (crossed) updateData()
       })
     })
   }
@@ -1045,6 +1100,8 @@ export function useMapChart(
           } else {
             updateDetailLayerSeries(1)
           }
+          // 省份/市级视图用区域填充表达点亮，隐藏 scatter 中心点
+          updateScatterOpacity()
         }
       })
     }, 1000)
@@ -1075,6 +1132,8 @@ export function useMapChart(
       },
       { notMerge: false },
     )
+    // 恢复全国视图，重新显示 scatter 中心点
+    updateScatterOpacity()
 
     flyTimer = setTimeout(() => {
       flying.value = false
