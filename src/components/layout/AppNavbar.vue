@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
-import { ChevronDown, LogOut, MapPin } from '@lucide/vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ChevronDown, LogOut, MapPin, Settings } from '@lucide/vue'
 import logoDark from '@/assets/images/logo_dark.png'
 import {
   DropdownMenu,
@@ -19,10 +19,11 @@ import { getAvatarUrl } from '@/utils/avatar'
  * AppNavbar - 顶部导航栏
  *
  * 高 56px，纯白背景，底部淡灰边框。
- * 左：Logo + 标题 ｜ 中：页面切换 tabs ｜ 右：用户信息 + 下拉退出
+ * 左：Logo + 标题 ｜ 中：页面切换 tabs ｜ 右：用户名/邮箱 + 下拉菜单（设置 / 退出）
  */
 
 const route = useRoute()
+const router = useRouter()
 const authStore = useAuthStore()
 const residenceStore = useResidenceStore()
 
@@ -37,7 +38,6 @@ const tabs: TabItem[] = [
   { name: 'statistics', label: '统计', to: '/statistics' },
   { name: 'timeline', label: '时间线', to: '/timeline' },
   { name: 'profile', label: '个人主页', to: '/profile' },
-  { name: 'settings', label: '设置', to: '/settings' },
 ]
 
 const activeTab = computed(() => route.name as string)
@@ -51,6 +51,10 @@ const avatarUrl = computed(() =>
 const residenceLabel = computed(
   () => residenceStore.residence?.cityName ?? '',
 )
+
+function handleGotoSettings(): void {
+  router.push('/settings')
+}
 
 async function handleLogout(): Promise<void> {
   await authStore.logout()
@@ -99,9 +103,14 @@ async function handleLogout(): Promise<void> {
 
     <!-- 右：用户信息 -->
     <div class="flex items-center gap-3">
-      <span v-if="user" class="hidden text-xs text-slate-400 lg:inline">
-        {{ user.email }}
-      </span>
+      <div v-if="user" class="hidden text-right lg:block">
+        <p class="text-sm font-medium text-slate-700">
+          {{ user.displayName ?? '旅行者' }}
+        </p>
+        <p class="text-xs text-slate-400">
+          {{ user.email }}
+        </p>
+      </div>
       <DropdownMenu>
         <DropdownMenuTrigger as-child>
           <button
@@ -118,7 +127,7 @@ async function handleLogout(): Promise<void> {
               v-else
               class="flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-xs font-bold text-slate-600 ring-1 ring-slate-200"
             >
-              {{ user?.email?.charAt(0)?.toUpperCase() ?? '?' }}
+              {{ user?.displayName?.charAt(0)?.toUpperCase() ?? user?.email?.charAt(0)?.toUpperCase() ?? '?' }}
             </div>
             <span
               v-if="residenceLabel"
@@ -130,8 +139,13 @@ async function handleLogout(): Promise<void> {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" class="w-56">
-          <DropdownMenuLabel class="text-xs font-normal text-slate-400">
-            {{ user?.email }}
+          <DropdownMenuLabel class="flex flex-col gap-0.5">
+            <span class="text-sm font-medium text-foreground">
+              {{ user?.displayName ?? '旅行者' }}
+            </span>
+            <span class="text-xs font-normal text-slate-400">
+              {{ user?.email }}
+            </span>
           </DropdownMenuLabel>
           <DropdownMenuLabel
             v-if="residenceLabel"
@@ -141,6 +155,10 @@ async function handleLogout(): Promise<void> {
             居住地：{{ residenceLabel }}
           </DropdownMenuLabel>
           <DropdownMenuSeparator />
+          <DropdownMenuItem class="cursor-pointer" @select="handleGotoSettings">
+            <Settings class="h-4 w-4" />
+            设置
+          </DropdownMenuItem>
           <DropdownMenuItem class="cursor-pointer text-destructive focus:text-destructive" @select="handleLogout">
             <LogOut class="h-4 w-4" />
             退出登录

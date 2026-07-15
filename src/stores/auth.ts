@@ -156,7 +156,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
   }
 
-  /** 更新显示名（profiles.display_name），同步本地 user 状态 */
+  /** 更新用户名（profiles.display_name），同步本地 user 状态 */
   async function updateDisplayName(name: string): Promise<void> {
     if (!user.value) throw new Error('未登录')
     const { error: err } = await supabase

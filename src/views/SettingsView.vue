@@ -29,7 +29,7 @@ import type { Residence, PurposeCategory } from '@/types'
  *
  * Task 13：三分区设置
  * 1. 居住地设置：ResidenceSelector（区县级）
- * 2. 账号信息：邮箱 / 显示名（可编辑）/ 头像预览（DiceBear）
+ * 2. 账号信息：邮箱 / 用户名（可编辑）/ 头像预览（DiceBear）
  * 3. 偏好设置：出行目的分类管理 + 个人主页可见性（公开开关 / 分享链接）
  *
  * AppNavbar + 居中内容区，卡片式分区，加载骨架屏。
@@ -85,7 +85,7 @@ const displayNameDraft = ref('')
 const displayNameSaving = ref(false)
 const displayNameInitialized = ref(false)
 
-// 首次拿到用户信息后同步显示名草稿
+// 首次拿到用户信息后同步用户名草稿
 watch(
   user,
   (u) => {
@@ -104,14 +104,14 @@ const isDisplayNameDirty = computed(
 async function handleSaveDisplayName(): Promise<void> {
   const name = displayNameDraft.value.trim()
   if (!name) {
-    toast.warning('显示名不能为空')
+    toast.warning('用户名不能为空')
     return
   }
   if (!isDisplayNameDirty.value) return
   displayNameSaving.value = true
   try {
     await authStore.updateDisplayName(name)
-    toast.success('显示名已更新')
+    toast.success('用户名已更新')
   } catch (e) {
     toast.error(e instanceof Error ? e.message : '保存失败')
   } finally {
@@ -205,16 +205,10 @@ function cancelNewPurpose(): void {
 const visibilitySaving = ref(false)
 const tokenSaving = ref(false)
 
-const isPublic = computed(
-  () => profileSettingsStore.settings?.isPublic ?? false,
-)
-const shareToken = computed(
-  () => profileSettingsStore.settings?.shareToken ?? '',
-)
+const isPublic = computed(() => profileSettingsStore.settings?.isPublic ?? false)
+const shareToken = computed(() => profileSettingsStore.settings?.shareToken ?? '')
 const shareUrl = computed(() =>
-  shareToken.value
-    ? `${window.location.origin}/p/${shareToken.value}`
-    : '',
+  shareToken.value ? `${window.location.origin}/p/${shareToken.value}` : '',
 )
 
 async function handleVisibilityChange(val: boolean): Promise<void> {
@@ -276,24 +270,16 @@ async function handleCopyLink(): Promise<void> {
       <div class="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:py-10">
         <!-- 页面标题 -->
         <div class="mb-6">
-          <h1 class="text-2xl font-bold tracking-tight text-slate-800">
-            设置
-          </h1>
-          <p class="mt-1 text-sm text-slate-500">
-            管理你的居住地、账号与偏好
-          </p>
+          <h1 class="text-2xl font-bold tracking-tight text-slate-800">设置</h1>
+          <p class="mt-1 text-sm text-slate-500">管理你的居住地、账号与偏好</p>
         </div>
 
         <!-- ============ 1. 居住地设置 ============ -->
-        <section
-          class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
-        >
+        <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div class="border-b border-slate-100 px-6 py-4">
             <div class="flex items-center gap-2">
               <MapPin class="h-5 w-5 text-muted-foreground" />
-              <h2 class="text-base font-semibold text-slate-800">
-                居住地设置
-              </h2>
+              <h2 class="text-base font-semibold text-slate-800">居住地设置</h2>
             </div>
             <p class="mt-1.5 text-xs leading-relaxed text-slate-500">
               居住地精确到区县级。居住地所在城市不会被点亮，以冷蓝色标识。
@@ -320,9 +306,7 @@ async function handleCopyLink(): Promise<void> {
         </section>
 
         <!-- ============ 2. 账号信息 ============ -->
-        <section
-          class="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
-        >
+        <section class="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div class="border-b border-slate-100 px-6 py-4">
             <div class="flex items-center gap-2">
               <User class="h-5 w-5 text-primary" />
@@ -350,21 +334,16 @@ async function handleCopyLink(): Promise<void> {
                 <p class="truncate text-sm font-medium text-slate-700">
                   {{ user?.email ?? '—' }}
                 </p>
-                <p class="mt-0.5 text-[11px] text-slate-400">
-                  头像由 DiceBear 根据种子自动生成
-                </p>
               </div>
             </div>
 
-            <!-- 显示名编辑 -->
+            <!-- 用户名编辑 -->
             <div>
-              <label class="mb-1.5 block text-xs font-medium text-slate-500">
-                显示名
-              </label>
+              <label class="mb-1.5 block text-xs font-medium text-slate-500"> 用户名 </label>
               <div class="flex gap-2">
                 <Input
                   v-model="displayNameDraft"
-                  placeholder="请输入显示名"
+                  placeholder="请输入用户名"
                   maxlength="20"
                   class="flex-1"
                   @keyup.enter="handleSaveDisplayName"
@@ -378,14 +357,11 @@ async function handleCopyLink(): Promise<void> {
                 </Button>
               </div>
             </div>
-
           </div>
         </section>
 
         <!-- ============ 3. 偏好设置 ============ -->
-        <section
-          class="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
-        >
+        <section class="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
           <div class="border-b border-slate-100 px-6 py-4">
             <div class="flex items-center gap-2">
               <SettingsIcon class="h-5 w-5 text-primary" />
@@ -403,12 +379,7 @@ async function handleCopyLink(): Promise<void> {
                     系统预设不可删除，自定义分类删除后关联记录转为"其他"
                   </p>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  class="shrink-0 h-8"
-                  @click="openNewPurpose"
-                >
+                <Button variant="outline" size="sm" class="shrink-0 h-8" @click="openNewPurpose">
                   <Plus class="h-3.5 w-3.5" />
                   新建分类
                 </Button>
@@ -416,11 +387,7 @@ async function handleCopyLink(): Promise<void> {
 
               <!-- 加载骨架屏 -->
               <div v-if="purposeStore.loading" class="flex flex-col gap-1.5">
-                <Skeleton
-                  v-for="i in 4"
-                  :key="i"
-                  class="h-10 w-full rounded-lg"
-                />
+                <Skeleton v-for="i in 4" :key="i" class="h-10 w-full rounded-lg" />
               </div>
 
               <!-- 分类列表 -->
@@ -462,9 +429,7 @@ async function handleCopyLink(): Promise<void> {
             <!-- 3.2 个人主页可见性 -->
             <div class="px-6 py-5">
               <div class="mb-3">
-                <p class="text-sm font-medium text-slate-700">
-                  个人主页可见性
-                </p>
+                <p class="text-sm font-medium text-slate-700">个人主页可见性</p>
                 <p class="mt-0.5 text-xs text-slate-400">
                   开启后，他人可通过分享链接查看你的点亮地图、统计与行程
                 </p>
@@ -491,9 +456,7 @@ async function handleCopyLink(): Promise<void> {
               <!-- 分享链接（仅公开时显示） -->
               <div v-if="isPublic" class="mt-3">
                 <div v-if="shareToken" class="space-y-2">
-                  <label class="block text-xs font-medium text-slate-500">
-                    分享链接
-                  </label>
+                  <label class="block text-xs font-medium text-slate-500"> 分享链接 </label>
                   <div class="flex gap-2">
                     <input
                       :value="shareUrl"
@@ -524,10 +487,11 @@ async function handleCopyLink(): Promise<void> {
                 </div>
 
                 <!-- 尚未生成 token -->
-                <div v-else class="flex items-center justify-between rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-3 py-3">
-                  <p class="text-xs text-slate-400">
-                    尚未生成分享链接
-                  </p>
+                <div
+                  v-else
+                  class="flex items-center justify-between rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-3 py-3"
+                >
+                  <p class="text-xs text-slate-400">尚未生成分享链接</p>
                   <Button
                     size="sm"
                     class="h-8"
@@ -553,16 +517,11 @@ async function handleCopyLink(): Promise<void> {
     </main>
 
     <!-- 新建分类弹窗 -->
-    <Dialog
-      :open="newPurposeVisible"
-      @update:open="(v) => (newPurposeVisible = v)"
-    >
+    <Dialog :open="newPurposeVisible" @update:open="(v) => (newPurposeVisible = v)">
       <DialogContent class="max-w-[360px]">
         <DialogHeader>
           <DialogTitle>新建出行目的分类</DialogTitle>
-          <DialogDescription class="sr-only">
-            新建出行目的分类
-          </DialogDescription>
+          <DialogDescription class="sr-only"> 新建出行目的分类 </DialogDescription>
         </DialogHeader>
         <Input
           v-model="newPurposeName"
@@ -571,14 +530,8 @@ async function handleCopyLink(): Promise<void> {
           @keyup.enter="confirmNewPurpose"
         />
         <DialogFooter>
-          <Button variant="outline" size="sm" @click="cancelNewPurpose">
-            取消
-          </Button>
-          <Button
-            size="sm"
-            :disabled="newPurposeSaving"
-            @click="confirmNewPurpose"
-          >
+          <Button variant="outline" size="sm" @click="cancelNewPurpose"> 取消 </Button>
+          <Button size="sm" :disabled="newPurposeSaving" @click="confirmNewPurpose">
             {{ newPurposeSaving ? '创建中...' : '创建' }}
           </Button>
         </DialogFooter>

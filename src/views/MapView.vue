@@ -21,10 +21,7 @@ const residenceStore = useResidenceStore()
 // ---- 初始化加载 ----
 onMounted(async () => {
   try {
-    await Promise.all([
-      visitRecordStore.loadAll(),
-      residenceStore.load(),
-    ])
+    await Promise.all([visitRecordStore.loadAll(), residenceStore.load()])
   } catch (e) {
     toast.error('地图数据加载失败，请刷新重试')
     console.error(e)
@@ -114,9 +111,9 @@ function handleFilterChange(filter: CityFilter): void {
 
         <!-- 快捷统计 -->
         <div class="mx-4 mb-3 flex items-center rounded-xl border border-border/60 bg-card/60 p-3">
-          <StatCard label="已点亮" :value="stats.litCityCount" />
+          <StatCard label="已点亮城市" :value="stats.litCityCount" />
           <Separator orientation="vertical" class="mx-1 h-8" />
-          <StatCard label="覆盖省" :value="stats.coveredProvinceCount" />
+          <StatCard label="覆盖省份" :value="stats.coveredProvinceCount" />
           <Separator orientation="vertical" class="mx-1 h-8" />
           <StatCard label="出行次数" :value="stats.totalTripCount" />
         </div>

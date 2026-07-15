@@ -20,7 +20,7 @@ import type { City, Trip, VisitRecord } from '@/types'
 /**
  * ProfileView - 个人主页（登录用户视角）
  *
- * - 顶部用户卡片：头像（大）+ 显示名 + 邮箱 + 统计概览
+ * - 顶部用户卡片：头像（大）+ 用户名 + 邮箱 + 统计概览
  * - 点亮地图只读展示（BaseMap readonly country 级）
  * - 行程列表（TripCard 可编辑/删除，按时间倒序，展开显示关联记录）
  * - 公开/私密切换入口（跳转设置页管理）
@@ -177,7 +177,7 @@ async function handleTripDelete(
                 {{ user?.email?.charAt(0)?.toUpperCase() ?? '?' }}
               </div>
 
-              <!-- 显示名 + 邮箱 -->
+              <!-- 用户名 + 邮箱 -->
               <div class="min-w-0 flex-1 text-center sm:text-left">
                 <h2 class="truncate text-xl font-bold text-slate-800">
                   {{ user?.displayName ?? '旅行者' }}
