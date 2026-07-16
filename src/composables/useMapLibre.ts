@@ -27,12 +27,15 @@ interface UseMapLibreCallbacks {
 // ============================================================================
 
 const COLOR = {
-  // 冷调深空感：海洋冷灰蓝有存在感，陆地近白形成层次对比，描边加深提升精致度
-  ocean: '#bcd0df',
-  landDefault: '#f8fafc',
-  landBorder: '#a3b5c4',
-  provinceBorder: '#5b6b7a',
-  cityBorder: '#a3b5c4',
+  // 海洋：清澈冷蓝，提高纯度去灰感，仅在全球视角下作为地球底色显现
+  ocean: '#cfe4f3',
+  // 陆地：近白冷灰，放大后作为主色调，避免满屏蓝
+  landDefault: '#f5f7fa',
+  landBorder: '#b8c4d0',
+  provinceBorder: '#6b7a89',
+  cityBorder: '#b8c4d0',
+  // 中国省份底色：不透明，放大后覆盖海洋蓝，让画面转为陆地色调
+  chinaBase: '#eef1f5',
   // 点亮色：提高饱和度作为视觉焦点，与冷调底色形成温暖对比
   visitLow: 'rgba(255, 140, 80, 0.50)',
   visitMid: 'rgba(245, 115, 35, 0.62)',
@@ -226,10 +229,10 @@ export function useMapLibre(
       name: 'travel-map-globe',
       // 3D 球状投影
       projection: { type: 'globe' },
-      // 天空/大气层：冷调深空感，与海洋色呼应，营造地球仪的太空背景
+      // 天空/大气层：浅冷调，低饱和避免边缘浑浊，营造干净太空背景
       sky: {
-        'sky-color': '#c8d6e4',
-        'horizon-color': '#d6e2ee',
+        'sky-color': '#e8eef4',
+        'horizon-color': '#eef2f6',
         'sky-horizon-blend': 0.5,
         // 关闭大气层光晕，避免地球边缘出现白色轮廓（双层视觉）
         'atmosphere-blend': 0,
@@ -245,11 +248,15 @@ export function useMapLibre(
         'city-centers': { type: 'geojson', data: emptyFeatureCollection() },
       },
       layers: [
-        // 海洋背景（globe 模式下作为地球底色）
+        // 海洋背景（globe 模式下作为地球底色；放大进入中国时渐隐，避免满屏蓝）
         {
           id: 'ocean-background',
           type: 'background',
-          paint: { 'background-color': COLOR.ocean },
+          paint: {
+            'background-color': COLOR.ocean,
+            'background-opacity': ['interpolate', ['linear'], ['zoom'],
+              0, 1, ZOOM.china - 0.5, 1, ZOOM.china + 1, 0],
+          },
         },
         // 世界国家填充
         {
@@ -274,7 +281,18 @@ export function useMapLibre(
               0, 0.6, ZOOM.china - 0.5, 0.6, ZOOM.china + 1, 0],
           },
         },
-        // 中国省份填充
+        // 中国省份底色：不透明，放大后覆盖海洋蓝，让画面转为陆地色调
+        {
+          id: 'china-base',
+          type: 'fill',
+          source: 'china-provinces',
+          paint: {
+            'fill-color': COLOR.chinaBase,
+            'fill-opacity': ['interpolate', ['linear'], ['zoom'],
+              ZOOM.china - 1, 0, ZOOM.china + 0.5, 1],
+          },
+        },
+        // 中国省份填充（点亮状态高亮）
         {
           id: 'province-fill',
           type: 'fill',
