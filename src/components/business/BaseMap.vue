@@ -84,6 +84,9 @@ const {
   unfocus,
 } = useMapLibre(containerRef, mapParams, callbacks)
 
+// 暴露 unfocus 给父组件，用于"点击中国"时重新聚焦视角
+defineExpose({ unfocus })
+
 // 层级或区域编码变化 → 聚焦/取消聚焦
 watch(
   () => [props.level, props.regionCode] as const,

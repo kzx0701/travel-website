@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import MapLayout from '@/components/layout/MapLayout.vue'
 import CitySearch from '@/components/business/CitySearch.vue'
 import CityList from '@/components/business/CityList.vue'
@@ -17,6 +17,9 @@ import type { City, CitySortKey, MapLevel } from '@/types'
 const mapStore = useMapStore()
 const visitRecordStore = useVisitRecordStore()
 const residenceStore = useResidenceStore()
+
+// 地图组件实例引用，用于直接调用 unfocus 重新聚焦
+const baseMapRef = ref<InstanceType<typeof BaseMap> | null>(null)
 
 // ---- 初始化加载 ----
 onMounted(async () => {
@@ -87,7 +90,13 @@ function handleRegionClick(code: string): void {
 }
 
 function handleBreadcrumbNavigate(level: MapLevel): void {
+  // 记录调用前的层级：若已在 country 级点"中国"，navigateBack 不会改变 level，
+  // BaseMap 的 watch 不会触发，需手动调用 unfocus 重新聚焦
+  const wasCountry = mapStore.currentLevel === 'country'
   mapStore.navigateBack(level)
+  if (level === 'country' && wasCountry) {
+    baseMapRef.value?.unfocus()
+  }
 }
 
 function handleSortChange(key: CitySortKey): void {
@@ -139,6 +148,7 @@ function handleFilterChange(filter: CityFilter): void {
     <div class="relative flex-1 overflow-hidden">
       <!-- 地图 -->
       <BaseMap
+        ref="baseMapRef"
         :level="mapStore.mapConfig.level"
         :region-code="mapStore.mapConfig.regionCode"
         :lit-cities="visitRecordStore.litCities"

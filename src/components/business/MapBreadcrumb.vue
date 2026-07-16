@@ -53,7 +53,9 @@ const crumbs = computed<Crumb[]>(() => {
 })
 
 function handleNavigate(crumb: Crumb): void {
-  if (crumb.active || !crumb.level) return
+  if (!crumb.level) return
+  // "中国"（country 级）即使当前已激活也可点击，用于重新聚焦视角
+  if (crumb.active && crumb.level !== 'country') return
   emit('navigate', crumb.level)
 }
 </script>
@@ -64,20 +66,21 @@ function handleNavigate(crumb: Crumb): void {
       <!-- 分隔符 -->
       <span v-if="idx > 0" class="text-gray-400">/</span>
 
-      <!-- 当前级：加粗不可点 -->
+      <!-- 当前级且非 country：加粗不可点 -->
       <span
-        v-if="crumb.active"
+        v-if="crumb.active && crumb.level !== 'country'"
         class="font-semibold text-gray-900"
         aria-current="page"
       >
         {{ crumb.label }}
       </span>
 
-      <!-- 上级：可点击回退 -->
+      <!-- 可点击：上级回退，或 country 级（即使激活也可点击以重新聚焦） -->
       <button
         v-else
         type="button"
-        class="cursor-pointer rounded px-1 text-gray-500 transition-colors hover:text-primary"
+        class="cursor-pointer rounded px-1 transition-colors hover:text-primary"
+        :class="crumb.active ? 'font-semibold text-gray-900' : 'text-gray-500'"
         @click="handleNavigate(crumb)"
       >
         {{ crumb.label }}
