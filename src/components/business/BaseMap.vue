@@ -87,7 +87,7 @@ const {
 // 暴露 unfocus 给父组件，用于"点击中国"时重新聚焦视角
 defineExpose({ unfocus })
 
-// 层级或区域编码变化 → 聚焦/取消聚焦
+// 层级或区域编码变化 → 聚焦/取消聚焦 + 更新选中省份样式
 watch(
   () => [props.level, props.regionCode] as const,
   ([level, regionCode]) => {
@@ -104,6 +104,8 @@ watch(
         })
       }
     }
+    // 同步更新省份填充数据，让选中省份的 selected 样式及时生效
+    updateData()
   },
 )
 

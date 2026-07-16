@@ -51,7 +51,10 @@ const COLOR = {
   residence: 'rgba(59, 130, 246, 0.15)',
   residenceStroke: 'rgba(59, 130, 246, 0.7)',
   litProvince: 'rgba(255, 120, 50, 0.22)',
-  unlitProvince: 'rgba(120, 135, 150, 0.08)',
+  unlitProvince: 'rgba(120, 135, 150, 0.04)',
+  // 选中省份：冷蓝调高亮，即使未点亮也能与其它省份区分
+  selectedProvince: 'rgba(59, 130, 246, 0.18)',
+  selectedProvinceStroke: 'rgba(37, 99, 235, 0.9)',
   dotVisit: '#e85a20',
   dotResidence: '#2563eb',
 } as const
@@ -295,15 +298,17 @@ export function useMapLibre(
               ZOOM.china - 1, 0, ZOOM.china + 0.5, 1],
           },
         },
-        // 中国省份填充（点亮状态高亮）
+        // 中国省份填充（选中状态优先，其次点亮状态高亮）
         {
           id: 'province-fill',
           type: 'fill',
           source: 'china-provinces',
           paint: {
-            'fill-color': ['match', ['get', 'lit'],
-              1, COLOR.litProvince,
-              COLOR.unlitProvince],
+            'fill-color': ['match', ['get', 'selected'],
+              1, COLOR.selectedProvince,
+              ['match', ['get', 'lit'],
+                1, COLOR.litProvince,
+                COLOR.unlitProvince]],
             'fill-opacity': ['interpolate', ['linear'], ['zoom'],
               ZOOM.china - 1, 0, ZOOM.china + 0.5, 1],
           },
@@ -321,13 +326,15 @@ export function useMapLibre(
               ZOOM.china - 1, 0, ZOOM.china + 0.5, 0.7, ZOOM.city, 0.3],
           },
         },
-        // 中国省份边界：柔和冷灰蓝细线，避免黑色硬线感
+        // 中国省份边界：柔和冷灰蓝细线，选中省份用冷蓝高亮
         {
           id: 'province-border',
           type: 'line',
           source: 'china-provinces',
           paint: {
-            'line-color': COLOR.provinceBorder,
+            'line-color': ['match', ['get', 'selected'],
+              1, COLOR.selectedProvinceStroke,
+              COLOR.provinceBorder],
             'line-width': ['interpolate', ['linear'], ['zoom'],
               ZOOM.china, 0.6, ZOOM.province, 1],
             'line-opacity': ['interpolate', ['linear'], ['zoom'],
@@ -440,10 +447,9 @@ export function useMapLibre(
   function setupEvents(): void {
     if (!map) return
 
-    // 点击中国省份（全国视图下）
+    // 点击中国省份（任意层级均可点击切换，支持省份间快速跳转）
     map.on('click', 'province-fill', (e: MapMouseEvent) => {
       if (params.value.readonly || flying.value) return
-      if (params.value.level !== 'country') return
       const feature = (e as unknown as { features?: Array<{ properties: Record<string, unknown> }> }).features?.[0]
       if (!feature) return
       const name = feature.properties?.name as string | undefined
@@ -468,9 +474,9 @@ export function useMapLibre(
       }
     })
 
-    // 鼠标样式
+    // 鼠标样式：省份填充在任意层级都可点击切换
     map.on('mouseenter', 'province-fill', () => {
-      if (!params.value.readonly && params.value.level === 'country') {
+      if (!params.value.readonly) {
         map!.getCanvas().style.cursor = 'pointer'
       }
     })
@@ -513,7 +519,7 @@ export function useMapLibre(
     }
   }
 
-  /** 更新省份填充数据（标记有点亮城市的省份为 lit=1） */
+  /** 更新省份填充数据（标记有点亮城市的省份为 lit=1，当前选中省份为 selected=1） */
   function updateProvinceFillData(): void {
     if (!map) return
     const source = map.getSource('china-provinces') as GeoJSONSource | undefined
@@ -526,7 +532,20 @@ export function useMapLibre(
       if (prov) litProvinceNames.add(prov.name)
     }
 
-    // 重新加载 china GeoJSON 并附加 lit 属性
+    // 当前选中省份名（province / city 级别时，regionCode 对应省份）
+    let selectedProvinceName = ''
+    if (params.value.level === 'province') {
+      const prov = getProvinceByCode(params.value.regionCode)
+      if (prov) selectedProvinceName = prov.name
+    } else if (params.value.level === 'city') {
+      const city = getCityByCode(params.value.regionCode)
+      if (city) {
+        const prov = getProvinceByCode(city.provinceCode)
+        if (prov) selectedProvinceName = prov.name
+      }
+    }
+
+    // 重新加载 china GeoJSON 并附加 lit / selected 属性
     loadGeoJson('country').then((chinaGeo) => {
       if (!chinaGeo || !map) return
       const features = chinaGeo.features.map((f) => ({
@@ -534,6 +553,7 @@ export function useMapLibre(
         properties: {
           ...f.properties,
           lit: litProvinceNames.has(getFeatureName(f) ?? '') ? 1 : 0,
+          selected: getFeatureName(f) === selectedProvinceName ? 1 : 0,
         },
       }))
       source.setData({ type: 'FeatureCollection', features } as unknown as GeoJSON.FeatureCollection)
