@@ -120,18 +120,31 @@ watch(
 <template>
   <div class="base-map absolute inset-0 overflow-hidden">
     <!-- 地图容器：内联样式确保 100% 高度，避免 MapLibre canvas 干扰布局 -->
-    <div ref="containerRef" class="absolute inset-0" style="width: 100%; height: 100%;" />
-
-    <!-- 加载骨架屏遮罩 -->
     <div
-      v-if="loading"
-      class="absolute inset-0 z-10 flex items-center justify-center bg-zinc-50/80 backdrop-blur-sm"
-    >
-      <div class="flex flex-col items-center gap-3 text-primary">
-        <div class="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
-        <span class="text-sm text-zinc-500">地图加载中…</span>
+      ref="containerRef"
+      class="absolute inset-0 map-canvas"
+      :class="{ 'map-entering': !loading }"
+      style="width: 100%; height: 100%;"
+    />
+
+    <!-- 加载遮罩：脉冲地球 + 渐变文字，Transition 淡出 -->
+    <Transition name="loading-fade">
+      <div
+        v-if="loading"
+        class="absolute inset-0 z-10 flex items-center justify-center bg-zinc-50/70 backdrop-blur-md"
+      >
+        <div class="flex flex-col items-center gap-5">
+          <!-- 脉冲地球 -->
+          <div class="map-loader-globe">
+            <div class="map-loader-ring" />
+            <div class="map-loader-ring" />
+            <div class="map-loader-core" />
+          </div>
+          <!-- 渐变文字 -->
+          <span class="map-loader-text text-sm">正在加载地图</span>
+        </div>
       </div>
-    </div>
+    </Transition>
 
     <!-- GeoJSON 缺失提示（降级提示，不阻塞渲染） -->
     <div
@@ -143,68 +156,169 @@ watch(
     </div>
 
     <!-- 缩放控制按钮组（左下角，含比例百分比） -->
-    <div
-      v-if="!readonly"
-      class="absolute bottom-3 left-3 z-10 flex items-center gap-1 rounded-lg bg-white/80 p-1 shadow-sm ring-1 ring-zinc-200/60 backdrop-blur-md"
-    >
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        class="size-7 rounded-md text-base text-zinc-600 hover:bg-zinc-100 hover:text-primary"
-        title="缩小"
-        @click="zoomOut"
+    <Transition name="ui-fade">
+      <div
+        v-if="!readonly && !loading"
+        class="absolute bottom-3 left-3 z-10 flex items-center gap-1 rounded-lg bg-white/80 p-1 shadow-sm ring-1 ring-zinc-200/60 backdrop-blur-md"
       >
-        −
-      </Button>
-      <span class="min-w-[3rem] text-center text-xs font-medium tabular-nums text-zinc-600">
-        {{ Math.round(currentZoom * 100) }}%
-      </span>
-      <Button
-        variant="ghost"
-        size="icon-sm"
-        class="size-7 rounded-md text-base text-zinc-600 hover:bg-zinc-100 hover:text-primary"
-        title="放大"
-        @click="zoomIn"
-      >
-        +
-      </Button>
-    </div>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          class="size-7 rounded-md text-base text-zinc-600 hover:bg-zinc-100 hover:text-primary"
+          title="缩小"
+          @click="zoomOut"
+        >
+          −
+        </Button>
+        <span class="min-w-[3rem] text-center text-xs font-medium tabular-nums text-zinc-600">
+          {{ Math.round(currentZoom * 100) }}%
+        </span>
+        <Button
+          variant="ghost"
+          size="icon-sm"
+          class="size-7 rounded-md text-base text-zinc-600 hover:bg-zinc-100 hover:text-primary"
+          title="放大"
+          @click="zoomIn"
+        >
+          +
+        </Button>
+      </div>
+    </Transition>
 
     <!-- 图例 -->
-    <div
-      class="pointer-events-none absolute bottom-3 right-3 z-10 flex flex-col gap-1.5 rounded-lg bg-white/80 px-3.5 py-2.5 text-xs text-zinc-600 shadow-sm ring-1 ring-zinc-200/60 backdrop-blur-md"
-    >
-      <div class="mb-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-400">
-        图例
+    <Transition name="ui-fade">
+      <div
+        v-if="!loading"
+        class="pointer-events-none absolute bottom-3 right-3 z-10 flex flex-col gap-1.5 rounded-lg bg-white/80 px-3.5 py-2.5 text-xs text-zinc-600 shadow-sm ring-1 ring-zinc-200/60 backdrop-blur-md"
+      >
+        <div class="mb-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-400">
+          图例
+        </div>
+        <div class="flex items-center gap-2">
+          <span
+            class="inline-block h-2.5 w-2.5 rounded-full"
+            style="background-color: #FFB380; box-shadow: 0 0 0 3px rgba(255, 179, 128, 0.15);"
+          />
+          <span>到达 1 次</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span
+            class="inline-block h-2.5 w-2.5 rounded-full"
+            style="background-color: #FF6B35; box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.18);"
+          />
+          <span>到达 2-3 次</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span
+            class="inline-block h-2.5 w-2.5 rounded-full"
+            style="background-color: #E05A20; box-shadow: 0 0 0 3px rgba(224, 90, 32, 0.2);"
+          />
+          <span>到达 4+ 次</span>
+        </div>
+        <div class="flex items-center gap-2">
+          <span
+            class="inline-block h-2.5 w-2.5 rounded-full"
+            style="background-color: #3B82F6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);"
+          />
+          <span>居住地</span>
+        </div>
       </div>
-      <div class="flex items-center gap-2">
-        <span
-          class="inline-block h-2.5 w-2.5 rounded-full"
-          style="background-color: #FFB380; box-shadow: 0 0 0 3px rgba(255, 179, 128, 0.15);"
-        />
-        <span>到达 1 次</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <span
-          class="inline-block h-2.5 w-2.5 rounded-full"
-          style="background-color: #FF6B35; box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.18);"
-        />
-        <span>到达 2-3 次</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <span
-          class="inline-block h-2.5 w-2.5 rounded-full"
-          style="background-color: #E05A20; box-shadow: 0 0 0 3px rgba(224, 90, 32, 0.2);"
-        />
-        <span>到达 4+ 次</span>
-      </div>
-      <div class="flex items-center gap-2">
-        <span
-          class="inline-block h-2.5 w-2.5 rounded-full"
-          style="background-color: #3B82F6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);"
-        />
-        <span>居住地</span>
-      </div>
-    </div>
+    </Transition>
   </div>
 </template>
+
+<style scoped>
+/* ============================ 地图出场动画 ============================ */
+/* 初始隐藏（loading 期间），loading 结束后通过 .map-entering 触发过渡到清晰 */
+.map-canvas {
+  opacity: 0;
+  filter: blur(12px);
+  transform: scale(0.96);
+  transition:
+    opacity 900ms cubic-bezier(0.22, 1, 0.36, 1),
+    filter 900ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 900ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+.map-canvas.map-entering {
+  opacity: 1;
+  filter: blur(0);
+  transform: scale(1);
+}
+
+/* ============================ Loading 遮罩淡出 ============================ */
+.loading-fade-leave-active {
+  transition: opacity 500ms ease;
+}
+.loading-fade-leave-to {
+  opacity: 0;
+}
+
+/* ============================ UI 元素淡入 ============================ */
+.ui-fade-enter-active {
+  transition: opacity 600ms ease 300ms;
+}
+.ui-fade-enter-from {
+  opacity: 0;
+}
+
+/* ============================ 脉冲地球 Loader ============================ */
+.map-loader-globe {
+  position: relative;
+  width: 56px;
+  height: 56px;
+}
+/* 双层光环：模拟地球轮廓 + 大气层 */
+.map-loader-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 1.5px solid #5b6b7a;
+  opacity: 0;
+  animation: map-loader-pulse 2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+.map-loader-ring:nth-child(2) {
+  animation-delay: 1s;
+}
+/* 中心球体：冷灰蓝渐变，呼应地图海洋色 */
+.map-loader-core {
+  position: absolute;
+  inset: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 30% 30%, #d6e2ee 0%, #bcd0df 60%, #94a8b8 100%);
+  box-shadow: 0 0 12px rgba(188, 208, 223, 0.6);
+}
+@keyframes map-loader-pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+/* ============================ 渐变文字 ============================ */
+.map-loader-text {
+  color: #5b6b7a;
+  letter-spacing: 0.1em;
+  animation: map-loader-text-fade 1.8s ease-in-out infinite;
+}
+@keyframes map-loader-text-fade {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .map-canvas,
+  .loading-fade-leave-active,
+  .ui-fade-enter-active,
+  .map-loader-ring,
+  .map-loader-text {
+    animation: none;
+    transition: opacity 200ms ease;
+    transform: none;
+    filter: none;
+  }
+}
+</style>

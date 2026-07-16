@@ -27,26 +27,27 @@ interface UseMapLibreCallbacks {
 // ============================================================================
 
 const COLOR = {
-  // 浅色系：海洋浅蓝灰，陆地浅灰白，描边浅灰，与项目冷灰白风格一致
-  ocean: '#e0f2fe',
-  landDefault: '#f1f5f9',
-  landBorder: '#cbd5e1',
-  provinceBorder: '#94a3b8',
-  cityBorder: '#cbd5e1',
-  visitLow: 'rgba(255, 179, 128, 0.45)',
-  visitMid: 'rgba(255, 137, 64, 0.55)',
-  visitHigh: 'rgba(234, 88, 12, 0.65)',
-  visitLowStroke: 'rgba(255, 149, 90, 0.85)',
-  visitMidStroke: 'rgba(234, 101, 37, 0.9)',
-  visitHighStroke: 'rgba(194, 65, 12, 0.95)',
+  // 冷调深空感：海洋冷灰蓝有存在感，陆地近白形成层次对比，描边加深提升精致度
+  ocean: '#bcd0df',
+  landDefault: '#f8fafc',
+  landBorder: '#a3b5c4',
+  provinceBorder: '#5b6b7a',
+  cityBorder: '#a3b5c4',
+  // 点亮色：提高饱和度作为视觉焦点，与冷调底色形成温暖对比
+  visitLow: 'rgba(255, 140, 80, 0.50)',
+  visitMid: 'rgba(245, 115, 35, 0.62)',
+  visitHigh: 'rgba(210, 65, 5, 0.72)',
+  visitLowStroke: 'rgba(230, 110, 60, 0.88)',
+  visitMidStroke: 'rgba(210, 90, 25, 0.92)',
+  visitHighStroke: 'rgba(170, 55, 5, 0.96)',
   selected: 'rgba(59, 130, 246, 0.25)',
   selectedStroke: 'rgba(37, 99, 235, 0.95)',
   residence: 'rgba(59, 130, 246, 0.15)',
   residenceStroke: 'rgba(59, 130, 246, 0.7)',
-  litProvince: 'rgba(255, 137, 64, 0.18)',
-  unlitProvince: 'rgba(148, 163, 184, 0.10)',
-  dotVisit: '#FF6B35',
-  dotResidence: '#3B82F6',
+  litProvince: 'rgba(255, 120, 50, 0.22)',
+  unlitProvince: 'rgba(120, 135, 150, 0.08)',
+  dotVisit: '#e85a20',
+  dotResidence: '#2563eb',
 } as const
 
 // zoom 阈值
@@ -189,13 +190,16 @@ export function useMapLibre(
       })
 
       map.on('load', () => {
-        loading.value = false
         setupLayers()
         setupEvents()
         updateData()
         // 自适应中间可见区域，让地球填充左右面板之间的空间
         fitGlobeToView()
         map?.resize()
+        // 延迟关闭 loading，配合出场动画过渡（400ms 淡出）
+        setTimeout(() => {
+          loading.value = false
+        }, 400)
       })
 
       map.on('zoom', () => {
@@ -222,10 +226,10 @@ export function useMapLibre(
       name: 'travel-map-globe',
       // 3D 球状投影
       projection: { type: 'globe' },
-      // 天空/大气层：浅色系，仅使用不依赖 3D terrain 的属性
+      // 天空/大气层：冷调深空感，与海洋色呼应，营造地球仪的太空背景
       sky: {
-        'sky-color': '#dbeafe',
-        'horizon-color': '#e0f2fe',
+        'sky-color': '#c8d6e4',
+        'horizon-color': '#d6e2ee',
         'sky-horizon-blend': 0.5,
         // 关闭大气层光晕，避免地球边缘出现白色轮廓（双层视觉）
         'atmosphere-blend': 0,
