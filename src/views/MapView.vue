@@ -136,7 +136,7 @@ function handleFilterChange(filter: CityFilter): void {
     </template>
 
     <!-- 中地图区：地图占满，面包屑悬浮其上 -->
-    <div class="relative h-full w-full">
+    <div class="relative flex-1 overflow-hidden">
       <!-- 地图 -->
       <BaseMap
         :level="mapStore.mapConfig.level"

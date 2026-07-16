@@ -4,16 +4,21 @@
 
 - `cities.ts`：省/市级数据集（含 34 个省级单位、358 个地级市/自治州/盟/地区，含港澳台主要城市），含拼音、经纬度，作为业务数据源直接使用
 - `districts.ts`：区/县级数据骨架（仅示例数据，后续扩充）
-- `geo/`：ECharts 地图渲染所需的 GeoJSON 文件（**需手动下载**，不随仓库提交）
+- `geo/`：地图渲染所需的 GeoJSON 文件（**需手动下载**，不随仓库提交）
+  - `geo/world/`：世界国家边界（Natural Earth 110m，**随仓库提交**，用于全球地球仪视图）
+
+> **注意**：地图渲染引擎已从 ECharts 迁移至 MapLibre GL JS v5+。GeoJSON 文件不再需要通过 `echarts.registerMap()` 注册，而是直接作为 MapLibre 的 GeoJSON source 使用。详见 `.trae/specs/map-redesign-globe/spec.md`。
 
 ## GeoJSON 文件下载与放置
 
-由于完整 GeoJSON 文件较大（全国约 1MB，全量省+市约 30MB+），且涉及版权与稳定性，本项目 **不打包** GeoJSON 文件，运行时由 `src/utils/mapGeoLoader.ts` 通过 Vite 静态 glob 扫描 `src/data/geo/**/*.json` 加载。
+由于完整 GeoJSON 文件较大（全国约 1MB，全量省+市约 30MB+），且涉及版权与稳定性，本项目 **不打包** GeoJSON 文件（世界国家边界除外），运行时由 `src/utils/mapGeoLoader.ts` 通过 Vite 静态 glob 扫描 `src/data/geo/**/*.json` 加载。
 
 ### 期望的目录结构
 
 ```
 src/data/geo/
+├── world/                          世界国家边界（随仓库提交）
+│   └── ne_110m_admin_0_countries.json   Natural Earth 110m 简化版
 ├── china.json                       全国地图（country 级）
 ├── province/
 │   ├── 110000.json                  北京市
@@ -75,6 +80,10 @@ done
 
 1. `console.warn` 输出未找到文件的提示；
 2. 返回 `null`，由 `BaseMap.vue` 在画面底部展示黄色提示条；
-3. ECharts 自动降级为无底图渲染（使用 `cartesian2d` 坐标系按经纬度绘制城市点位），保证组件不会崩溃。
+3. MapLibre 仅渲染已有图层（如世界国家边界），缺失的省份/城市图层不渲染，保证组件不会崩溃。
 
 补齐 GeoJSON 文件后无需改动代码，Vite 会自动重新扫描 glob 并热更新。
+
+## 世界国家边界数据
+
+`geo/world/ne_110m_admin_0_countries.json` 来自 [Natural Earth](https://www.naturalearthdata.com/) 110m 精度行政边界（公共领域），用于 MapLibre globe 投影下的全球陆地轮廓展示。该文件随仓库提交（gzip ~100KB）。

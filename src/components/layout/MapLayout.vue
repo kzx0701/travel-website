@@ -33,7 +33,7 @@ function toggleImmersive() {
     <!-- 主体：地图全宽 + 悬浮面板 -->
     <div class="relative flex flex-1 overflow-hidden">
       <!-- 中地图区：全宽，面板悬浮其上 -->
-      <main class="relative flex-1 overflow-hidden bg-zinc-50/60">
+      <main class="relative flex flex-1 flex-col overflow-hidden bg-zinc-50/60">
         <!-- 移动端左右抽屉触发按钮 -->
         <div class="absolute left-3 top-3 z-20 flex gap-2 lg:hidden">
           <Button

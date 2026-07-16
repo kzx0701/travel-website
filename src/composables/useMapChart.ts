@@ -8,6 +8,7 @@ import {
 } from '@/data/cities'
 import {
   registerMapForLevel,
+  getMapName,
   getProvinceBBox,
   loadGeoJson,
   type GeoJSON,
@@ -289,6 +290,54 @@ export function useMapChart(
       .sort((a, b) => Number(a.isSelected) - Number(b.isSelected))
   }
 
+  /**
+   * 将 detailLayerData 转换为 ECharts map 系列数据
+   * 使用 map 系列替代 custom 系列，可随 geo roam 同步变换，避免描边错位
+   */
+  function buildProvinceDetailMapData(): Array<{
+    name: string
+    cityCode: string
+    value: number
+    itemStyle: Record<string, unknown>
+  }> {
+    return detailLayerData.map((item) => {
+      const fillColor = item.isSelected
+        ? `rgba(59, 130, 246, ${0.22 * item.opacity})`
+        : item.isResidence
+          ? `rgba(59, 130, 246, ${0.12 * item.opacity})`
+          : item.isLit
+            ? getVisitFillColor(item.visitCount, item.opacity)
+            : 'rgba(248, 250, 252, 0)'
+      const strokeColor = item.isSelected
+        ? `rgba(37, 99, 235, ${0.95 * item.opacity})`
+        : item.isResidence
+          ? `rgba(59, 130, 246, ${0.72 * item.opacity})`
+          : item.isLit
+            ? getVisitStrokeColor(item.visitCount, item.opacity)
+            : `rgba(148, 163, 184, ${0.28 * item.opacity})`
+      const lineWidth = item.isSelected
+        ? 2.2
+        : item.isLit || item.isResidence
+          ? 1.4
+          : 0.8
+      return {
+        name: item.name,
+        cityCode: item.cityCode,
+        value: item.visitCount,
+        itemStyle: {
+          areaColor: fillColor,
+          borderColor: strokeColor,
+          borderWidth: lineWidth,
+          shadowBlur: item.isSelected ? 3 * item.opacity : 0,
+          shadowColor: item.isSelected
+            ? `rgba(37, 99, 235, ${0.12 * item.opacity})`
+            : 'rgba(0, 0, 0, 0)',
+          opacity: item.opacity,
+        },
+      }
+    })
+  }
+
   function getDetailLayerSeriesData(opacity: number): ProvinceDetailDataItem[] {
     return detailLayerData.map((item) => ({ ...item, opacity }))
   }
@@ -298,19 +347,22 @@ export function useMapChart(
     if (typeof opacity === 'number') {
       detailLayerData = getDetailLayerSeriesData(opacity)
     }
+    const seriesUpdate: Record<string, unknown> = {
+      id: 'province-detail',
+      animation: false,
+      animationDuration: 0,
+      animationDurationUpdate: 0,
+      animationEasingUpdate: 'linear',
+      universalTransition: { enabled: false },
+      data: buildProvinceDetailMapData(),
+    }
+    // 仅在有省份详情时更新 map 名，避免 null 导致 ECharts 报错
+    if (detailLayerProvinceCode) {
+      seriesUpdate.map = getMapName('province', detailLayerProvinceCode)
+    }
     chart.value.setOption(
       {
-        series: [
-          {
-            id: 'province-detail',
-            animation: false,
-            animationDuration: 0,
-            animationDurationUpdate: 0,
-            animationEasingUpdate: 'linear',
-            universalTransition: { enabled: false },
-            data: detailLayerData,
-          },
-        ],
+        series: [seriesUpdate],
       },
       { notMerge: false },
     )
@@ -333,6 +385,9 @@ export function useMapChart(
     const geo = await loadGeoJson('province', provinceCode)
     if (requestId !== detailLayerRequestId) return false
     if (!geo) return false
+
+    // 注册到 ECharts 作为 map 系列使用，确保跟随 geo roam 同步变换
+    await registerMapForLevel('province', provinceCode)
 
     detailLayerGeo = geo
     detailLayerData = buildProvinceDetailData(geo, provinceCode, 0)
@@ -555,8 +610,12 @@ export function useMapChart(
     const showScatterPoints = level === 'country'
 
     const tooltipFormatter = (p: unknown) => {
-      const evt = p as { name?: string; data?: ScatterDataItem | ProvinceDetailDataItem }
-      if (evt.data && typeof evt.data === 'object' && 'polygons' in evt.data) {
+      const evt = p as {
+        seriesId?: string
+        name?: string
+        data?: ScatterDataItem | ProvinceDetailDataItem | Record<string, unknown>
+      }
+      if (evt.seriesId === 'province-detail' && evt.data && typeof evt.data === 'object') {
         const d = evt.data as ProvinceDetailDataItem
         if (d.isSelected) return `${d.name}<br/>当前选中`
         if (d.isResidence) return `${d.name}<br/>居住地`
@@ -651,83 +710,27 @@ export function useMapChart(
         regions: buildGeoRegions(),
       },
       series: [
-        // 已点亮城市：scatter + 柔和发光
+        // 省份详情层：使用 map 系列跟随 geo roam 同步变换，避免 custom polygon 描边错位
+        // 无省份详情时回退到主地图名（data 为空，不渲染任何区域）
         {
           id: 'province-detail',
           name: 'province-detail',
-          type: 'custom',
-          coordinateSystem: 'geo',
+          type: 'map',
+          map: detailLayerProvinceCode
+            ? getMapName('province', detailLayerProvinceCode)
+            : mapName ?? 'china',
+          roam: false,
           silent: false,
           animation: false,
           animationDuration: 0,
           animationDurationUpdate: 0,
           animationEasingUpdate: 'linear',
           universalTransition: { enabled: false },
-          data: detailLayerData,
+          label: { show: false },
+          emphasis: { disabled: true },
+          select: { disabled: true },
+          data: buildProvinceDetailMapData(),
           z: 3,
-          renderItem: (params: unknown, api: unknown) => {
-            const renderParams = params as { dataIndex?: number }
-            const renderApi = api as {
-              coord: (point: [number, number]) => [number, number]
-              style: (extra?: Record<string, unknown>) => Record<string, unknown>
-            }
-            const item =
-              typeof renderParams.dataIndex === 'number'
-                ? detailLayerData[renderParams.dataIndex]
-                : undefined
-            if (!item || item.opacity <= 0) return { type: 'group', children: [] }
-
-            // 省份视图下：已点亮城市填充行政区域，未点亮城市透明；选中/居住地优先显示蓝色
-            const fillColor = item.isSelected
-              ? `rgba(59, 130, 246, ${0.22 * item.opacity})`
-              : item.isResidence
-                ? `rgba(59, 130, 246, ${0.12 * item.opacity})`
-                : item.isLit
-                  ? getVisitFillColor(item.visitCount, item.opacity)
-                  : 'rgba(248, 250, 252, 0)'
-            const strokeColor = item.isSelected
-              ? `rgba(37, 99, 235, ${0.95 * item.opacity})`
-              : item.isResidence
-                ? `rgba(59, 130, 246, ${0.72 * item.opacity})`
-                : item.isLit
-                  ? getVisitStrokeColor(item.visitCount, item.opacity)
-                  : `rgba(148, 163, 184, ${0.28 * item.opacity})`
-            const lineWidth = item.isSelected
-              ? 2.2
-              : item.isLit || item.isResidence
-                ? 1.4
-                : 0.8
-
-            return {
-              type: 'group',
-              children: item.polygons.map((ring) => ({
-                type: 'polygon',
-                shape: {
-                  points: ring.map((point) => renderApi.coord(point)),
-                },
-                style: renderApi.style({
-                  fill: fillColor,
-                  stroke: strokeColor,
-                  lineWidth,
-                  shadowBlur: item.isSelected ? 3 * item.opacity : 0,
-                  shadowColor: item.isSelected
-                    ? `rgba(37, 99, 235, ${0.12 * item.opacity})`
-                    : 'rgba(0, 0, 0, 0)',
-                }),
-                emphasis: {
-                  style: {
-                    fill: item.isSelected
-                      ? `rgba(59, 130, 246, ${0.18 * item.opacity})`
-                      : `rgba(255, 179, 128, ${0.08 * item.opacity})`,
-                    stroke: item.isSelected
-                      ? `rgba(37, 99, 235, ${0.98 * item.opacity})`
-                      : `rgba(185, 130, 90, ${0.88 * item.opacity})`,
-                    lineWidth: item.isSelected ? 2.4 : 1.5,
-                  },
-                },
-              })),
-            }
-          },
         },
         {
           id: 'cities',
@@ -899,7 +902,7 @@ export function useMapChart(
     const showScatterPoints = params.value.level === 'country'
     chart.value.setOption({
       series: [
-        { id: 'province-detail', data: detailLayerData },
+        { id: 'province-detail', data: buildProvinceDetailMapData() },
         { id: 'cities', data: scatterData.filter((d) => !d.isResidence), itemStyle: { opacity: showScatterPoints ? 1 : 0 } },
         { id: 'residence', data: scatterData.filter((d) => d.isResidence), itemStyle: { opacity: showScatterPoints ? 1 : 0 } },
       ],
@@ -940,8 +943,8 @@ export function useMapChart(
       }
     })
     chart.value.on('click', 'series.province-detail', (evt: unknown) => {
-      const e = evt as { data?: ProvinceDetailDataItem }
-      if (!e.data || params.value.readonly || flying.value) return
+      const e = evt as { data?: { cityCode?: string } }
+      if (!e.data?.cityCode || params.value.readonly || flying.value) return
       const city = getCityByCode(e.data.cityCode)
       if (city && callbacks.value.onCityClick) {
         callbacks.value.onCityClick(city)

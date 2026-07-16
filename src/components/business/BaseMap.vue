@@ -2,11 +2,12 @@
 import { computed, ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
 import type { City, MapLevel } from '@/types'
-import { useMapChart, type UseMapChartCallbacks } from '@/composables/useMapChart'
+import { useMapLibre, type UseMapLibreParams, type UseMapLibreCallbacks } from '@/composables/useMapLibre'
 import { provinces, getCityByCode } from '@/data/cities'
+import 'maplibre-gl/dist/maplibre-gl.css'
 
 /**
- * BaseMap - 统一渲染 API 的三级地图组件
+ * BaseMap - 统一渲染 API 的三级地图组件（MapLibre GL JS）
  *
  * Props:
  *  - level: 当前地图层级
@@ -46,7 +47,7 @@ const emit = defineEmits<{
 const containerRef = ref<HTMLDivElement | null>(null)
 
 // 组装 composable 入参
-const chartParams = computed(() => ({
+const mapParams = computed<UseMapLibreParams>(() => ({
   level: props.level,
   regionCode: props.regionCode,
   litCities: props.litCities,
@@ -55,7 +56,7 @@ const chartParams = computed(() => ({
   readonly: props.readonly,
 }))
 
-const callbacks = computed<UseMapChartCallbacks>(() => ({
+const callbacks = computed<UseMapLibreCallbacks>(() => ({
   onCityClick: (city: City) => emit('cityClick', city),
   onRegionClick: (code: string, name: string) => {
     // 全国级点击省份时，GeoJSON 仅返回 region 名称，需反查省份 adcode
@@ -65,7 +66,6 @@ const callbacks = computed<UseMapChartCallbacks>(() => ({
         emit('regionClick', matched.code, matched.name)
         return
       }
-      // 名称匹配失败时回传原 name（调用方可降级处理）
       emit('regionClick', code, name)
       return
     }
@@ -82,9 +82,9 @@ const {
   updateData,
   focusProvince,
   unfocus,
-} = useMapChart(containerRef, chartParams, callbacks)
+} = useMapLibre(containerRef, mapParams, callbacks)
 
-// 层级或区域编码变化 → 聚焦/取消聚焦（不再重新加载地图，始终用全国地图）
+// 层级或区域编码变化 → 聚焦/取消聚焦
 watch(
   () => [props.level, props.regionCode] as const,
   ([level, regionCode]) => {
@@ -97,14 +97,14 @@ watch(
       if (city) {
         focusProvince(city.provinceCode, {
           center: [city.longitude, city.latitude],
-          zoom: 6,
+          zoom: 8,
         })
       }
     }
   },
 )
 
-// 仅数据变化 → 局部更新（避免重新注册地图）
+// 仅数据变化 → 局部更新
 watch(
   () => [props.litCities, props.cityVisitCount, props.residenceCityCode, props.readonly],
   () => {
@@ -115,9 +115,9 @@ watch(
 </script>
 
 <template>
-  <div class="base-map relative h-full w-full overflow-hidden">
-    <!-- 地图容器 -->
-    <div ref="containerRef" class="absolute inset-0" />
+  <div class="base-map absolute inset-0 overflow-hidden">
+    <!-- 地图容器：内联样式确保 100% 高度，避免 MapLibre canvas 干扰布局 -->
+    <div ref="containerRef" class="absolute inset-0" style="width: 100%; height: 100%;" />
 
     <!-- 加载骨架屏遮罩 -->
     <div
