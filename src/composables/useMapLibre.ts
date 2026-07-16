@@ -29,13 +29,16 @@ interface UseMapLibreCallbacks {
 const COLOR = {
   // 海洋：清澈冷蓝，提高纯度去灰感，仅在全球视角下作为地球底色显现
   ocean: '#cfe4f3',
-  // 陆地：近白冷灰，放大后作为主色调，避免满屏蓝
-  landDefault: '#f5f7fa',
-  landBorder: '#b8c4d0',
-  provinceBorder: '#6b7a89',
-  cityBorder: '#b8c4d0',
-  // 中国省份底色：不透明，放大后覆盖海洋蓝，让画面转为陆地色调
-  chinaBase: '#eef1f5',
+  // 其它国家陆地：近白冷灰，与中国板块形成微妙色温对比
+  landDefault: '#eef1f5',
+  landBorder: '#c4cdd8',
+  // 中国省份：柔和暖白底色，与冷灰白国家板块区分，有温度但不突兀
+  chinaBase: '#f7f4ef',
+  // 省界：柔和冷灰蓝，避免黑色硬线感，营造水墨般淡雅层次
+  provinceBorder: '#9aa8b8',
+  // 省界外轮廓：更浅的冷灰，加宽描边制造分层精致感
+  provinceOutline: '#cbd4de',
+  cityBorder: '#a8b4c2',
   // 点亮色：提高饱和度作为视觉焦点，与冷调底色形成温暖对比
   visitLow: 'rgba(255, 140, 80, 0.50)',
   visitMid: 'rgba(245, 115, 35, 0.62)',
@@ -305,7 +308,20 @@ export function useMapLibre(
               ZOOM.china - 1, 0, ZOOM.china + 0.5, 1],
           },
         },
-        // 中国省份边界
+        // 中国省份外轮廓：浅冷灰加宽描边，制造分层精致感
+        {
+          id: 'province-outline',
+          type: 'line',
+          source: 'china-provinces',
+          paint: {
+            'line-color': COLOR.provinceOutline,
+            'line-width': ['interpolate', ['linear'], ['zoom'],
+              ZOOM.china, 2.5, ZOOM.province, 3.5],
+            'line-opacity': ['interpolate', ['linear'], ['zoom'],
+              ZOOM.china - 1, 0, ZOOM.china + 0.5, 0.7, ZOOM.city, 0.3],
+          },
+        },
+        // 中国省份边界：柔和冷灰蓝细线，避免黑色硬线感
         {
           id: 'province-border',
           type: 'line',
@@ -313,9 +329,9 @@ export function useMapLibre(
           paint: {
             'line-color': COLOR.provinceBorder,
             'line-width': ['interpolate', ['linear'], ['zoom'],
-              ZOOM.china, 0.5, ZOOM.province, 1],
+              ZOOM.china, 0.6, ZOOM.province, 1],
             'line-opacity': ['interpolate', ['linear'], ['zoom'],
-              ZOOM.china - 1, 0, ZOOM.china + 0.5, 1, ZOOM.city, 0.3],
+              ZOOM.china - 1, 0, ZOOM.china + 0.5, 0.8, ZOOM.city, 0.3],
           },
         },
         // 城市区域填充（省级视图，数据驱动）

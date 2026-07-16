@@ -47,17 +47,18 @@ export const useVisitRecordStore = defineStore('visitRecord', () => {
     return result
   })
 
-  /** 统计概览：已点亮城市数 / 覆盖省份数 / 总出行次数 */
+  /** 统计概览：点亮国家数 / 点亮城市数 / 总出行次数 */
   const stats = computed(() => {
     const citySet = new Set<string>()
-    const provinceSet = new Set<string>()
+    const countrySet = new Set<string>()
     for (const r of records.value) {
       citySet.add(r.cityCode)
-      provinceSet.add(r.provinceCode)
+      // 当前数据均为中国城市，按省份归属推断国家
+      countrySet.add('中国')
     }
     return {
+      litCountryCount: countrySet.size,
       litCityCount: citySet.size,
-      coveredProvinceCount: provinceSet.size,
       totalTripCount: records.value.length,
     }
   })

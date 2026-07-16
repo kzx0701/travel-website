@@ -41,14 +41,15 @@ const avatarUrl = computed(() =>
 const stats = computed(() => {
   const records = profile.value?.visitRecords ?? []
   const citySet = new Set<string>()
-  const provinceSet = new Set<string>()
+  const countrySet = new Set<string>()
   for (const r of records) {
     citySet.add(r.cityCode)
-    provinceSet.add(r.provinceCode)
+    // 当前数据均为中国城市，按省份归属推断国家
+    countrySet.add('中国')
   }
   return {
+    litCountryCount: countrySet.size,
     litCityCount: citySet.size,
-    coveredProvinceCount: provinceSet.size,
     totalTripCount: records.length,
   }
 })
@@ -176,15 +177,15 @@ onMounted(async () => {
               <!-- 统计概览 -->
               <div class="grid w-full grid-cols-3 gap-2 sm:w-auto sm:gap-3">
                 <StatCard
-                  label="已点亮城"
+                  label="点亮国家"
+                  :value="stats.litCountryCount"
+                />
+                <StatCard
+                  label="点亮城市"
                   :value="stats.litCityCount"
                 />
                 <StatCard
-                  label="覆盖省份"
-                  :value="stats.coveredProvinceCount"
-                />
-                <StatCard
-                  label="总出行次"
+                  label="出行次数"
                   :value="stats.totalTripCount"
                 />
               </div>
@@ -209,7 +210,7 @@ onMounted(async () => {
                   点亮地图
                 </h2>
               </div>
-              <div class="h-96">
+              <div class="relative h-96">
                 <BaseMap
                   level="country"
                   readonly

@@ -69,14 +69,15 @@ const filteredRecords = computed<VisitRecord[]>(() => {
 
 const filteredStats = computed(() => {
   const citySet = new Set<string>()
-  const provinceSet = new Set<string>()
+  const countrySet = new Set<string>()
   for (const r of filteredRecords.value) {
     citySet.add(r.cityCode)
-    provinceSet.add(r.provinceCode)
+    // 当前数据均为中国城市，按省份归属推断国家
+    countrySet.add('中国')
   }
   return {
+    litCountryCount: countrySet.size,
     litCityCount: citySet.size,
-    coveredProvinceCount: provinceSet.size,
     totalTripCount: filteredRecords.value.length,
   }
 })
@@ -210,16 +211,16 @@ onMounted(async () => {
               class="flex items-center justify-center rounded-xl border border-slate-200 bg-white px-2 py-4 shadow-sm"
             >
               <StatCard
-                label="已点亮城"
-                :value="filteredStats.litCityCount"
+                label="点亮国家"
+                :value="filteredStats.litCountryCount"
               />
             </div>
             <div
               class="flex items-center justify-center rounded-xl border border-slate-200 bg-white px-2 py-4 shadow-sm"
             >
               <StatCard
-                label="覆盖省份"
-                :value="filteredStats.coveredProvinceCount"
+                label="点亮城市"
+                :value="filteredStats.litCityCount"
               />
             </div>
             <div
