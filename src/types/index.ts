@@ -52,6 +52,9 @@ export interface District {
 // 业务实体
 // ============================================================================
 
+// 日期精度：year=仅年份，month=年月，day=完整日期
+export type DatePrecision = 'year' | 'month' | 'day'
+
 // 到达记录
 export interface VisitRecord {
   id: string
@@ -62,6 +65,7 @@ export interface VisitRecord {
   provinceName: string
   startDate: string
   endDate?: string | null
+  datePrecision: DatePrecision
   purpose: string
   note: string
   tripId?: string | null

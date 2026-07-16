@@ -121,6 +121,7 @@ interface VisitRecordRpcRow {
   province_name: string
   start_date: string
   end_date: string | null
+  date_precision: string | null
   purpose: string
   note: string | null
   trip_id: string | null
@@ -149,6 +150,7 @@ function mapVisitRecordRow(row: VisitRecordRpcRow): VisitRecord {
     provinceName: row.province_name,
     startDate: row.start_date,
     endDate: row.end_date,
+    datePrecision: (row.date_precision as VisitRecord['datePrecision']) ?? 'day',
     purpose: row.purpose,
     note: row.note ?? '',
     tripId: row.trip_id,

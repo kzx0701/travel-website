@@ -4,6 +4,7 @@ import { Calendar, Trash2 } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
+import { formatRecordDate } from '@/utils'
 import type { VisitRecord } from '@/types'
 
 /**
@@ -40,6 +41,11 @@ const emit = defineEmits<{
 const sortedRecords = computed(() =>
   [...props.records].sort((a, b) => b.startDate.localeCompare(a.startDate)),
 )
+
+// 日期显示文本（根据精度格式化）
+function dateText(record: VisitRecord): string {
+  return formatRecordDate(record.startDate, record.endDate, record.datePrecision)
+}
 
 function handleEdit(record: VisitRecord): void {
   emit('edit', record)
@@ -104,11 +110,7 @@ function handleCancelDelete(): void {
         <div class="flex items-center justify-between gap-2">
           <div class="min-w-0 text-sm font-medium text-foreground">
             <span class="inline-flex flex-wrap items-center gap-1">
-              <span class="tabular-nums whitespace-nowrap">{{ record.startDate }}</span>
-              <template v-if="record.endDate">
-                <span class="text-muted-foreground">—</span>
-                <span class="tabular-nums whitespace-nowrap">{{ record.endDate }}</span>
-              </template>
+              <span class="tabular-nums whitespace-nowrap">{{ dateText(record) }}</span>
             </span>
           </div>
           <span

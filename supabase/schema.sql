@@ -134,6 +134,7 @@ create table if not exists public.visit_records (
   province_name text not null,
   start_date   date not null,
   end_date     date,
+  date_precision text not null default 'day' check (date_precision in ('year','month','day')),
   purpose      text not null default '其他',
   note         varchar(50),
   trip_id      uuid references public.trips (id) on delete set null,
@@ -296,6 +297,7 @@ returns table (
   province_name text,
   start_date date,
   end_date date,
+  date_precision text,
   purpose text,
   note varchar,
   trip_id uuid,
@@ -307,7 +309,8 @@ security definer
 set search_path = public
 as $$
   select vr.id, vr.user_id, vr.city_code, vr.city_name, vr.province_code,
-         vr.province_name, vr.start_date, vr.end_date, vr.purpose, vr.note,
+         vr.province_name, vr.start_date, vr.end_date, vr.date_precision,
+         vr.purpose, vr.note,
          vr.trip_id, vr.created_at, vr.updated_at
   from public.visit_records vr
   join public.profile_settings s on s.user_id = vr.user_id

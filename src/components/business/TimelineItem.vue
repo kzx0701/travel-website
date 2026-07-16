@@ -1,12 +1,13 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { formatRecordDate } from '@/utils'
 import type { VisitRecord } from '@/types'
 
 /**
  * TimelineItem - 时间线单条目
  *
  * 在父容器提供的竖线之上渲染一个圆点 + 卡片。
- * 卡片内容：城市名 / 日期（范围显示起止）/ 目的标签 / 备注。
+ * 卡片内容：城市名 / 日期（按精度格式化）/ 目的标签 / 备注。
  *
  * Props:
  *  - record: 单条到达记录
@@ -15,12 +16,9 @@ const props = defineProps<{
   record: VisitRecord
 }>()
 
-const dateText = computed(() => {
-  if (props.record.endDate) {
-    return `${props.record.startDate} — ${props.record.endDate}`
-  }
-  return props.record.startDate
-})
+const dateText = computed(() =>
+  formatRecordDate(props.record.startDate, props.record.endDate, props.record.datePrecision),
+)
 </script>
 
 <template>

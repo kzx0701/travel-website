@@ -1,5 +1,5 @@
 import { supabase, getCurrentUserId } from './supabase'
-import type { VisitRecord } from '@/types'
+import type { VisitRecord, DatePrecision } from '@/types'
 
 // 新建记录的输入字段
 export interface VisitRecordInput {
@@ -9,6 +9,7 @@ export interface VisitRecordInput {
   provinceName: string
   startDate: string
   endDate?: string | null
+  datePrecision: DatePrecision
   purpose: string
   note?: string
   tripId?: string | null
@@ -22,6 +23,7 @@ export interface VisitRecordUpdate {
   provinceName?: string
   startDate?: string
   endDate?: string | null
+  datePrecision?: DatePrecision
   purpose?: string
   note?: string
   tripId?: string | null
@@ -37,6 +39,7 @@ interface VisitRecordRow {
   province_name: string
   start_date: string
   end_date: string | null
+  date_precision: string
   purpose: string
   note: string | null
   trip_id: string | null
@@ -54,6 +57,7 @@ function mapRow(row: VisitRecordRow): VisitRecord {
     provinceName: row.province_name,
     startDate: row.start_date,
     endDate: row.end_date,
+    datePrecision: (row.date_precision as DatePrecision) ?? 'day',
     purpose: row.purpose,
     note: row.note ?? '',
     tripId: row.trip_id,
@@ -102,6 +106,7 @@ export async function create(data: VisitRecordInput): Promise<VisitRecord> {
       province_name: data.provinceName,
       start_date: data.startDate,
       end_date: data.endDate ?? null,
+      date_precision: data.datePrecision,
       purpose: data.purpose,
       note: data.note ?? null,
       trip_id: data.tripId ?? null,
@@ -126,6 +131,7 @@ export async function update(
   if (data.provinceName !== undefined) update.province_name = data.provinceName
   if (data.startDate !== undefined) update.start_date = data.startDate
   if (data.endDate !== undefined) update.end_date = data.endDate
+  if (data.datePrecision !== undefined) update.date_precision = data.datePrecision
   if (data.purpose !== undefined) update.purpose = data.purpose
   if (data.note !== undefined) update.note = data.note
   if (data.tripId !== undefined) update.trip_id = data.tripId

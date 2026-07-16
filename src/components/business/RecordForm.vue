@@ -16,8 +16,15 @@ import {
   FormMessage,
 } from '@/components/ui/form'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { DatePicker } from '@/components/ui/date-picker'
-import type { City, VisitRecord } from '@/types'
+import type { City, VisitRecord, DatePrecision } from '@/types'
 import type { VisitRecordInput } from '@/api/visitRecord'
 
 /**
@@ -27,14 +34,13 @@ import type { VisitRecordInput } from '@/api/visitRecord'
  * - 新增模式：不传 record；提交按钮显示"点亮城市"（首次）或"添加记录"（非首次）
  * - 编辑模式：传 record；提交按钮显示"保存"
  *
- * Props:
- *  - city: 目标城市
- *  - record?: 编辑模式下的初始记录
- *  - isFirst: 是否为该城市的第一条记录（用于按钮文案）
- * Emits:
- *  - submit(data)
- *  - cancel()
+ * 日期支持四种精度：
+ *  - year：仅年份（久远记忆）
+ *  - month：年月
+ *  - day：完整日期
+ *  - range：日期范围
  */
+
 const props = defineProps<{
   city: City
   record?: VisitRecord
@@ -46,21 +52,45 @@ const emit = defineEmits<{
   cancel: []
 }>()
 
-// ---- 日期类型 ----
-type DateMode = 'single' | 'range'
-const dateMode = ref<DateMode>('single')
+// ---- 日期精度模式 ----
+// year/month/day 对应 datePrecision；range 视为 day 精度但有结束日期
+type DateMode = 'year' | 'month' | 'day' | 'range'
+const dateMode = ref<DateMode>('day')
 
-// ---- 日期值 ----
-const singleDate = ref<string>('')
-const dateRange = ref<[string, string] | null>(null)
+// ---- 各模式下的值 ----
+const yearValue = ref<string>('') // 'YYYY'
+const monthYearValue = ref<string>('') // 'YYYY'
+const monthValue = ref<string>('') // '1-12'
+const dayValue = ref<string>('') // 'YYYY-MM-DD'
+const rangeValue = ref<[string, string] | null>(null)
+
+// ---- 年份/月份选项 ----
+const currentYear = new Date().getFullYear()
+const yearOptions = computed(() => {
+  const arr: number[] = []
+  for (let y = currentYear; y >= 1980; y--) arr.push(y)
+  return arr
+})
+const monthOptions = [
+  { value: '1', label: '1 月' },
+  { value: '2', label: '2 月' },
+  { value: '3', label: '3 月' },
+  { value: '4', label: '4 月' },
+  { value: '5', label: '5 月' },
+  { value: '6', label: '6 月' },
+  { value: '7', label: '7 月' },
+  { value: '8', label: '8 月' },
+  { value: '9', label: '9 月' },
+  { value: '10', label: '10 月' },
+  { value: '11', label: '11 月' },
+  { value: '12', label: '12 月' },
+]
 
 // ---- zod schema ----
-// 备注:可选,但若填写不超过 50 字
+// startDate 在表单内部由各模式维护，提交时统一规范化，schema 层面设为可选
 const schema = toTypedSchema(
   z.object({
-    startDate: z
-      .string({ required_error: '请选择到达日期' })
-      .min(1, '请选择到达日期'),
+    startDate: z.string().optional(),
     endDate: z.string().nullable().optional(),
     purpose: z
       .string({ required_error: '请选择出行目的' })
@@ -81,12 +111,14 @@ const { handleSubmit, setFieldValue, setValues } = useForm({
   },
 })
 
-// ---- 初始化 ----
+// ---- 初始化（编辑模式） ----
 function initFromRecord(): void {
   if (!props.record) return
+  const precision = props.record.datePrecision ?? 'day'
   if (props.record.endDate) {
+    // 有结束日期 → range 模式
     dateMode.value = 'range'
-    dateRange.value = [props.record.startDate, props.record.endDate]
+    rangeValue.value = [props.record.startDate, props.record.endDate]
     setValues({
       startDate: props.record.startDate,
       endDate: props.record.endDate,
@@ -94,9 +126,30 @@ function initFromRecord(): void {
       note: props.record.note ?? '',
       tripId: props.record.tripId ?? null,
     })
+  } else if (precision === 'year') {
+    dateMode.value = 'year'
+    yearValue.value = props.record.startDate.slice(0, 4)
+    setValues({
+      startDate: props.record.startDate,
+      endDate: null,
+      purpose: props.record.purpose,
+      note: props.record.note ?? '',
+      tripId: props.record.tripId ?? null,
+    })
+  } else if (precision === 'month') {
+    dateMode.value = 'month'
+    monthYearValue.value = props.record.startDate.slice(0, 4)
+    monthValue.value = String(Number(props.record.startDate.slice(5, 7)))
+    setValues({
+      startDate: props.record.startDate,
+      endDate: null,
+      purpose: props.record.purpose,
+      note: props.record.note ?? '',
+      tripId: props.record.tripId ?? null,
+    })
   } else {
-    dateMode.value = 'single'
-    singleDate.value = props.record.startDate
+    dateMode.value = 'day'
+    dayValue.value = props.record.startDate
     setValues({
       startDate: props.record.startDate,
       endDate: null,
@@ -118,27 +171,41 @@ onMounted(() => {
   initFromRecord()
 })
 
-// ---- 日期选择回调 ----
-// DatePicker 包装器的 update:modelValue 类型为 string | [string, string] | null
-// 单日期模式下回传 string | null；范围模式下回传 [string, string] | null
-function handleSingleDateChange(
-  value: string | [string, string] | null,
-): void {
-  // 单日期模式下不会回传数组，做类型守卫兜底
+// ---- 各模式选择回调 ----
+function handleYearChange(v: string): void {
+  yearValue.value = v
+  setFieldValue('startDate', `${v}-01-01`)
+}
+
+function handleMonthYearChange(v: string): void {
+  monthYearValue.value = v
+  syncMonthStartDate()
+}
+
+function handleMonthChange(v: string): void {
+  monthValue.value = v
+  syncMonthStartDate()
+}
+
+function syncMonthStartDate(): void {
+  if (monthYearValue.value && monthValue.value) {
+    const m = String(monthValue.value).padStart(2, '0')
+    setFieldValue('startDate', `${monthYearValue.value}-${m}-01`)
+  }
+}
+
+function handleDayChange(value: string | [string, string] | null): void {
   if (Array.isArray(value)) return
-  singleDate.value = value ?? ''
+  dayValue.value = value ?? ''
   if (value) {
     setFieldValue('startDate', value)
     setFieldValue('endDate', null)
   }
 }
 
-function handleDateRangeChange(
-  value: string | [string, string] | null,
-): void {
-  // 范围模式下不会回传字符串
+function handleRangeChange(value: string | [string, string] | null): void {
   if (typeof value === 'string') return
-  dateRange.value = value
+  rangeValue.value = value
   if (value && value.length === 2) {
     setFieldValue('startDate', value[0])
     setFieldValue('endDate', value[1])
@@ -157,15 +224,47 @@ const submitLabel = computed(() => {
 const submitting = ref(false)
 
 const onSubmit = handleSubmit(async (values) => {
-  // 范围日期校验：结束日期不早于开始日期
-  if (
-    dateMode.value === 'range' &&
-    values.endDate &&
-    values.endDate < values.startDate
-  ) {
-    toast.warning('结束日期不能早于开始日期')
-    return
+  // 根据模式校验并规范化日期
+  let startDate = values.startDate ?? ''
+  let endDate: string | null = null
+  let datePrecision: DatePrecision = 'day'
+
+  if (dateMode.value === 'year') {
+    if (!yearValue.value) {
+      toast.warning('请选择年份')
+      return
+    }
+    startDate = `${yearValue.value}-01-01`
+    datePrecision = 'year'
+  } else if (dateMode.value === 'month') {
+    if (!monthYearValue.value || !monthValue.value) {
+      toast.warning('请选择年月')
+      return
+    }
+    const m = String(monthValue.value).padStart(2, '0')
+    startDate = `${monthYearValue.value}-${m}-01`
+    datePrecision = 'month'
+  } else if (dateMode.value === 'day') {
+    if (!dayValue.value) {
+      toast.warning('请选择到达日期')
+      return
+    }
+    startDate = dayValue.value
+    datePrecision = 'day'
+  } else if (dateMode.value === 'range') {
+    if (!rangeValue.value || rangeValue.value.length !== 2) {
+      toast.warning('请选择日期范围')
+      return
+    }
+    startDate = rangeValue.value[0]
+    endDate = rangeValue.value[1]
+    datePrecision = 'day'
+    if (endDate < startDate) {
+      toast.warning('结束日期不能早于开始日期')
+      return
+    }
   }
+
   submitting.value = true
   try {
     const payload: VisitRecordInput = {
@@ -173,8 +272,9 @@ const onSubmit = handleSubmit(async (values) => {
       cityName: props.city.name,
       provinceCode: props.city.provinceCode,
       provinceName: props.city.provinceName,
-      startDate: values.startDate,
-      endDate: dateMode.value === 'range' ? values.endDate ?? null : null,
+      startDate,
+      endDate,
+      datePrecision,
       purpose: values.purpose,
       note: values.note ?? '',
       tripId: values.tripId ?? null,
@@ -209,38 +309,114 @@ function handleCancel(): void {
     <!-- 表单主体 -->
     <div class="flex-1 overflow-y-auto px-5 py-4">
       <form class="record-form space-y-4" @submit="onSubmit">
-        <!-- 日期类型切换 -->
+        <!-- 日期精度切换 -->
         <FormField name="startDate">
           <FormItem>
-            <FormLabel>到达日期</FormLabel>
+            <FormLabel>到达时间</FormLabel>
             <RadioGroup
               :model-value="dateMode"
-              class="mb-2 flex gap-4"
+              class="mb-3 flex flex-wrap gap-x-4 gap-y-2"
               @update:model-value="(v) => (dateMode = v as DateMode)"
             >
-              <div class="flex items-center gap-2">
-                <RadioGroupItem id="date-mode-single" value="single" />
-                <label for="date-mode-single" class="cursor-pointer text-sm text-slate-700">单日期</label>
+              <div class="flex items-center gap-1.5">
+                <RadioGroupItem id="dm-year" value="year" />
+                <label for="dm-year" class="cursor-pointer text-sm text-slate-700">仅年份</label>
               </div>
-              <div class="flex items-center gap-2">
-                <RadioGroupItem id="date-mode-range" value="range" />
-                <label for="date-mode-range" class="cursor-pointer text-sm text-slate-700">日期范围</label>
+              <div class="flex items-center gap-1.5">
+                <RadioGroupItem id="dm-month" value="month" />
+                <label for="dm-month" class="cursor-pointer text-sm text-slate-700">年月</label>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <RadioGroupItem id="dm-day" value="day" />
+                <label for="dm-day" class="cursor-pointer text-sm text-slate-700">具体日期</label>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <RadioGroupItem id="dm-range" value="range" />
+                <label for="dm-range" class="cursor-pointer text-sm text-slate-700">日期范围</label>
               </div>
             </RadioGroup>
-            <FormControl>
+
+            <!-- 仅年份 -->
+            <FormControl v-if="dateMode === 'year'">
+              <Select
+                :model-value="yearValue"
+                @update:model-value="handleYearChange"
+              >
+                <SelectTrigger class="w-full">
+                  <SelectValue placeholder="选择年份" />
+                </SelectTrigger>
+                <SelectContent class="max-h-60">
+                  <SelectItem
+                    v-for="y in yearOptions"
+                    :key="y"
+                    :value="String(y)"
+                    class="cursor-pointer transition-colors hover:bg-accent"
+                  >
+                    {{ y }} 年
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </FormControl>
+
+            <!-- 年月 -->
+            <FormControl v-else-if="dateMode === 'month'">
+              <div class="flex gap-2">
+                <Select
+                  :model-value="monthYearValue"
+                  @update:model-value="handleMonthYearChange"
+                >
+                  <SelectTrigger class="flex-1">
+                    <SelectValue placeholder="选择年份" />
+                  </SelectTrigger>
+                  <SelectContent class="max-h-60">
+                    <SelectItem
+                      v-for="y in yearOptions"
+                      :key="y"
+                      :value="String(y)"
+                      class="cursor-pointer transition-colors hover:bg-accent"
+                    >
+                      {{ y }} 年
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+                <Select
+                  :model-value="monthValue"
+                  @update:model-value="handleMonthChange"
+                >
+                  <SelectTrigger class="w-28">
+                    <SelectValue placeholder="月份" />
+                  </SelectTrigger>
+                  <SelectContent class="max-h-60">
+                    <SelectItem
+                      v-for="m in monthOptions"
+                      :key="m.value"
+                      :value="m.value"
+                      class="cursor-pointer transition-colors hover:bg-accent"
+                    >
+                      {{ m.label }}
+                    </SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+            </FormControl>
+
+            <!-- 具体日期 -->
+            <FormControl v-else-if="dateMode === 'day'">
               <DatePicker
-                v-if="dateMode === 'single'"
-                :model-value="singleDate"
+                :model-value="dayValue"
                 placeholder="选择到达日期"
                 class="w-full"
-                @update:model-value="handleSingleDateChange"
+                @update:model-value="handleDayChange"
               />
+            </FormControl>
+
+            <!-- 日期范围 -->
+            <FormControl v-else>
               <DatePicker
-                v-else
-                :model-value="dateRange"
+                :model-value="rangeValue"
                 range
                 class="w-full"
-                @update:model-value="handleDateRangeChange"
+                @update:model-value="handleRangeChange"
               />
             </FormControl>
             <FormMessage />
