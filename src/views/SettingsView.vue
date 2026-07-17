@@ -119,7 +119,14 @@ async function handleSaveDisplayName(): Promise<void> {
   }
 }
 
-async function handleLogout(): Promise<void> {
+// 退出登录二次确认（声明式 ConfirmDialog）
+const logoutVisible = ref(false)
+
+function handleLogout(): void {
+  logoutVisible.value = true
+}
+
+async function confirmLogout(): Promise<void> {
   try {
     await authStore.logout()
     toast.success('已退出登录')
@@ -558,6 +565,17 @@ async function handleCopyLink(): Promise<void> {
       confirm-text="确认生成"
       cancel-text="取消"
       @confirm="confirmRegenerateToken"
+    />
+
+    <!-- 退出登录二次确认 -->
+    <ConfirmDialog
+      v-model:visible="logoutVisible"
+      title="退出登录"
+      description="确定要退出当前账号吗？退出后需要重新登录。"
+      confirm-text="确认退出"
+      cancel-text="取消"
+      danger
+      @confirm="confirmLogout"
     />
   </div>
 </template>

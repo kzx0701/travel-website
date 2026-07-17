@@ -84,7 +84,7 @@ const onSubmit = handleSubmit(async (values) => {
             <FormControl>
               <Input
                 type="password"
-                placeholder="至少 6 位"
+                placeholder="请输入密码"
                 v-bind="componentField"
               />
             </FormControl>

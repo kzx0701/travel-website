@@ -413,16 +413,15 @@ create trigger on_auth_user_created
   for each row execute function public.handle_new_user();
 
 -- ----------------------------------------------------------------------------
--- 10. 预设 6 类出行目的（幂等：仅插入尚未存在的系统预设）
+-- 10. 预设 5 类出行目的（幂等：仅插入尚未存在的系统预设）
 -- ----------------------------------------------------------------------------
 insert into public.purpose_categories (user_id, name, sort_order)
 select * from (values
-  (null::uuid, '旅游',    1),
-  (null::uuid, '出差',    2),
-  (null::uuid, '探亲',    3),
-  (null::uuid, '工作学习', 4),
-  (null::uuid, '中转',    5),
-  (null::uuid, '其他',    6)
+  (null::uuid, '旅游', 1),
+  (null::uuid, '出差', 2),
+  (null::uuid, '探亲', 3),
+  (null::uuid, '学习', 4),
+  (null::uuid, '其他', 5)
 ) as seed(user_id, name, sort_order)
 where not exists (
   select 1 from public.purpose_categories pc

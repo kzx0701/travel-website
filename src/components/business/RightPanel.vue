@@ -1,8 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { useRouter } from 'vue-router'
 import { toast } from 'vue-sonner'
-import { ChevronRight, MapPin, Plus } from '@lucide/vue'
+import { MapPin, Plus } from '@lucide/vue'
 import MapBreadcrumb from './MapBreadcrumb.vue'
 import RecordList from './RecordList.vue'
 import RecordForm from './RecordForm.vue'
@@ -26,15 +25,9 @@ const mapStore = useMapStore()
 const visitRecordStore = useVisitRecordStore()
 const residenceStore = useResidenceStore()
 const purposeStore = usePurposeStore()
-const router = useRouter()
 
 /** 当前正在编辑的记录（form 模式编辑时使用） */
 const editingRecord = ref<VisitRecord | null>(null)
-
-/** 是否未设置居住地（用于默认态引导提示） */
-const hasNoResidence = computed(
-  () => !residenceStore.residence && !residenceStore.loading,
-)
 
 /** 当前选中城市是否为居住地（居住地不可点亮） */
 const isResidenceCity = computed(
@@ -42,10 +35,6 @@ const isResidenceCity = computed(
     !!mapStore.selectedCity &&
     mapStore.selectedCity.code === residenceStore.residenceCityCode,
 )
-
-function handleGotoSettings(): void {
-  router.push('/settings')
-}
 
 /** 当前选中城市的到达记录列表 */
 const selectedCityRecords = computed(() => {
@@ -229,23 +218,6 @@ function handleRecordEdit(record: VisitRecord): void {
               请先选择城市
             </p>
           </div>
-
-          <!-- 未设置居住地引导提示 -->
-          <Button
-            v-if="hasNoResidence"
-            variant="outline"
-            class="mb-4 mx-4 flex h-auto items-center gap-3 px-4 py-3 text-left"
-            @click="handleGotoSettings"
-          >
-            <MapPin class="h-5 w-5 shrink-0 text-primary" />
-            <div class="min-w-0 flex-1">
-              <p class="text-sm font-medium text-primary">未设置居住地</p>
-              <p class="mt-0.5 text-xs text-muted-foreground">
-                前往设置，居住地所在城市将不被点亮
-              </p>
-            </div>
-            <ChevronRight class="h-4 w-4 shrink-0 text-muted-foreground/60" />
-          </Button>
         </div>
 
         <!-- 城市详情态：列表 + 底部添加按钮 -->

@@ -8,6 +8,7 @@ import {
   SheetTitle,
 } from '@/components/ui/sheet'
 import { BookOpen, Menu, Maximize2, Minimize2 } from '@lucide/vue'
+import { useMapStore } from '@/stores/map'
 
 /**
  * MapLayout - 地图页主布局
@@ -17,6 +18,7 @@ import { BookOpen, Menu, Maximize2, Minimize2 } from '@lucide/vue'
  * AppNavbar 由 App.vue 全局提供，不在此组件内
  */
 
+const mapStore = useMapStore()
 const leftDrawer = ref(false)
 const rightDrawer = ref(false)
 
@@ -46,7 +48,7 @@ function toggleImmersive() {
             <Menu class="h-5 w-5" />
           </Button>
         </div>
-        <div class="absolute right-3 top-3 z-20 lg:hidden">
+        <div v-if="mapStore.selectedCity" class="absolute right-3 top-3 z-20 lg:hidden">
           <Button
             variant="ghost"
             size="icon-sm"
@@ -77,16 +79,16 @@ function toggleImmersive() {
       <Transition name="panel-left">
         <Card
           v-if="!immersive"
-          class="absolute left-3 top-1/2 z-10 hidden h-[85%] w-[280px] -translate-y-1/2 overflow-hidden rounded-xl border-zinc-200/60 bg-white/95 shadow-lg backdrop-blur-md lg:flex lg:flex-col"
+          class="absolute left-3 top-1/2 z-10 hidden h-[85%] w-[320px] -translate-y-1/2 overflow-hidden rounded-xl border-zinc-200/60 bg-white/95 shadow-lg backdrop-blur-md lg:flex lg:flex-col"
         >
           <slot name="left" />
         </Card>
       </Transition>
 
-      <!-- 右侧悬浮面板（桌面端，非沉浸式时显示，垂直居中） -->
+      <!-- 右侧悬浮面板（桌面端，选中城市且非沉浸式时显示，垂直居中） -->
       <Transition name="panel-right">
         <Card
-          v-if="!immersive"
+          v-if="!immersive && mapStore.selectedCity"
           class="absolute right-3 top-1/2 z-10 hidden h-[85%] w-[320px] -translate-y-1/2 overflow-hidden rounded-xl border-zinc-200/60 bg-white/95 shadow-lg backdrop-blur-md lg:flex lg:flex-col"
         >
           <slot name="right" />
@@ -96,7 +98,7 @@ function toggleImmersive() {
 
     <!-- 移动端左侧抽屉 -->
     <Sheet v-model:open="leftDrawer">
-      <SheetContent side="left" class="w-[300px] p-0 sm:max-w-[300px]">
+      <SheetContent side="left" class="w-[340px] p-0 sm:max-w-[340px]">
         <SheetTitle class="sr-only">城市列表</SheetTitle>
         <div class="h-full overflow-y-auto">
           <slot name="left" />
