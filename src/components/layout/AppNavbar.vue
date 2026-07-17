@@ -64,19 +64,19 @@ async function handleLogout(): Promise<void> {
 
 <template>
   <header
-    class="flex h-14 shrink-0 items-center justify-between gap-2 border-b bg-background px-3 sm:px-6"
+    class="flex h-14 shrink-0 items-center border-b bg-background px-3 sm:px-6"
   >
-    <!-- 左：Logo + 标题 -->
-    <div class="flex shrink-0 items-center gap-2">
+    <!-- 左：Logo + 标题（flex-1 与右侧均分剩余空间，保证 tabs 真正居中） -->
+    <div class="flex flex-1 items-center justify-start gap-2">
       <img :src="logoDark" alt="足记" class="h-7 w-7 object-contain" />
       <span class="hidden text-base font-semibold tracking-tight text-foreground sm:inline">
         足记
       </span>
     </div>
 
-    <!-- 中：页面切换 tabs -->
+    <!-- 中：页面切换 tabs（shrink-0 不被挤压） -->
     <nav
-      class="flex flex-1 items-center justify-center overflow-x-auto sm:flex-none sm:overflow-visible"
+      class="flex shrink-0 items-center justify-center overflow-x-auto"
       aria-label="主导航"
     >
       <Tabs :model-value="activeTab">
@@ -94,8 +94,8 @@ async function handleLogout(): Promise<void> {
       </Tabs>
     </nav>
 
-    <!-- 右：用户信息 -->
-    <div class="flex items-center gap-3">
+    <!-- 右：用户信息（flex-1 与左侧均分，内容靠右对齐） -->
+    <div class="flex flex-1 items-center justify-end gap-3">
       <div v-if="user" class="hidden text-right lg:block">
         <p class="text-sm font-medium text-foreground">
           {{ user.displayName ?? '旅行者' }}

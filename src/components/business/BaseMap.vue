@@ -6,6 +6,7 @@ import {
   useMapLibre,
   type UseMapLibreParams,
   type UseMapLibreCallbacks,
+  type LegendVisibility,
 } from '@/composables/useMapLibre'
 import { provinces, getCityByCode } from '@/data/cities'
 import 'maplibre-gl/dist/maplibre-gl.css'
@@ -77,11 +78,40 @@ const callbacks = computed<UseMapLibreCallbacks>(() => ({
   },
 }))
 
-const { loading, mapAvailable, currentZoom, zoomIn, zoomOut, updateData, focusProvince, unfocus } =
+const { loading, mapAvailable, currentZoom, zoomIn, zoomOut, updateData, focusProvince, unfocus, setLegendVisibility } =
   useMapLibre(containerRef, mapParams, callbacks)
 
 // 暴露 unfocus 给父组件，用于"点击中国"时重新聚焦视角
 defineExpose({ unfocus })
+
+// ============================ 图例可见性控制 ============================
+
+interface LegendItem {
+  key: keyof LegendVisibility
+  label: string
+  color: string
+}
+
+/** 图例项配置：颜色与地图图层配色呼应，用于图例圆点视觉 */
+const legendItems: LegendItem[] = [
+  { key: 'visitLow', label: '到达 1 次', color: '#ffb380' },
+  { key: 'visitMid', label: '到达 2-3 次', color: '#ff6b35' },
+  { key: 'visitHigh', label: '到达 4+ 次', color: '#e05a20' },
+  { key: 'residence', label: '居住地', color: '#3b82f6' },
+]
+
+/** 图例可见性状态：点击图例项 toggle，通过 setLegendVisibility 控制地图图层显隐 */
+const legendVisibility = ref<LegendVisibility>({
+  visitLow: true,
+  visitMid: true,
+  visitHigh: true,
+  residence: true,
+})
+
+function toggleLegend(key: keyof LegendVisibility): void {
+  legendVisibility.value[key] = !legendVisibility.value[key]
+  setLegendVisibility({ ...legendVisibility.value })
+}
 
 // 层级或区域编码变化 → 聚焦/取消聚焦 + 更新选中省份样式
 watch(
@@ -185,42 +215,41 @@ watch(
       </div>
     </Transition>
 
-    <!-- 图例 -->
+    <!-- 图例（可点击切换图层分类显隐） -->
     <Transition name="ui-fade">
       <div
         v-if="!loading"
-        class="pointer-events-none absolute bottom-3 right-3 z-10 flex flex-col gap-1.5 rounded-lg bg-background/90 px-3.5 py-2.5 text-xs text-muted-foreground shadow-sm ring-1 ring-border/60 backdrop-blur-md"
+        class="absolute bottom-3 right-3 z-10 min-w-[148px] overflow-hidden rounded-xl bg-background/80 shadow-lg shadow-black/5 ring-1 ring-border/50 backdrop-blur-xl"
       >
-        <div class="mb-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-          图例
+        <!-- 标题 -->
+        <div class="flex items-center justify-between px-3 pb-2 pt-2.5">
+          <span class="text-[10px] font-semibold uppercase tracking-[0.18em] text-muted-foreground/70">
+            图例
+          </span>
+          <span class="text-[10px] font-medium text-muted-foreground/40">点击切换</span>
         </div>
-        <div class="flex items-center gap-2">
-          <span
-            class="inline-block h-2.5 w-2.5 rounded-full"
-            style="background-color: #ffb380; box-shadow: 0 0 0 3px rgba(255, 179, 128, 0.15)"
-          />
-          <span>到达 1 次</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span
-            class="inline-block h-2.5 w-2.5 rounded-full"
-            style="background-color: #ff6b35; box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.18)"
-          />
-          <span>到达 2-3 次</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span
-            class="inline-block h-2.5 w-2.5 rounded-full"
-            style="background-color: #e05a20; box-shadow: 0 0 0 3px rgba(224, 90, 32, 0.2)"
-          />
-          <span>到达 4+ 次</span>
-        </div>
-        <div class="flex items-center gap-2">
-          <span
-            class="inline-block h-2.5 w-2.5 rounded-full"
-            style="background-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18)"
-          />
-          <span>居住地</span>
+        <div class="mx-3 h-px bg-border/50" />
+        <!-- 图例项 -->
+        <div class="flex flex-col gap-0.5 p-1.5">
+          <button
+            v-for="item in legendItems"
+            :key="item.key"
+            type="button"
+            class="group flex items-center gap-2.5 rounded-md px-2 py-1.5 transition-colors duration-200 hover:bg-accent/50"
+            :class="legendVisibility[item.key]
+              ? 'text-foreground/80'
+              : 'text-muted-foreground/35'"
+            :title="legendVisibility[item.key] ? '点击隐藏' : '点击显示'"
+            @click="toggleLegend(item.key)"
+          >
+            <span
+              class="inline-block h-2 w-2 shrink-0 rounded-full transition-all duration-300"
+              :style="{ backgroundColor: item.color, opacity: legendVisibility[item.key] ? 1 : 0.2 }"
+            />
+            <span class="text-xs font-medium tracking-tight transition-opacity duration-200">
+              {{ item.label }}
+            </span>
+          </button>
         </div>
       </div>
     </Transition>

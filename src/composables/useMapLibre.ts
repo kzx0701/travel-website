@@ -1,5 +1,5 @@
 import { ref, type Ref, onMounted, onUnmounted, nextTick } from 'vue'
-import maplibregl, { type Map, type MapMouseEvent, type GeoJSONSource } from 'maplibre-gl'
+import maplibregl, { type Map, type MapMouseEvent, type GeoJSONSource, type FilterSpecification } from 'maplibre-gl'
 import type { City, MapLevel } from '@/types'
 import { provinces, getCityByCode, getProvinceByCode, getProvinceCenter } from '@/data/cities'
 import {
@@ -24,6 +24,17 @@ export interface UseMapLibreParams {
 export interface UseMapLibreCallbacks {
   onCityClick?: (city: City) => void
   onRegionClick?: (code: string, name: string) => void
+}
+
+/**
+ * 图例项可见性。对应地图右下角图例的 4 个分类，
+ * 通过 setFilter 控制对应 feature 的显隐。
+ */
+export interface LegendVisibility {
+  visitLow: boolean // 到达 1 次
+  visitMid: boolean // 到达 2-3 次
+  visitHigh: boolean // 到达 4+ 次
+  residence: boolean // 居住地
 }
 
 // ============================================================================
@@ -705,6 +716,8 @@ export function useMapLibre(
         cityName: city.name,
         visitCount: cityVisitCountMap[city.code] ?? 1,
         isResidence: city.code === residenceCode ? 1 : 0,
+        // 点亮标记：litCities 中的城市均为点亮，用于图例 filter 判断
+        isLit: 1,
       },
     }))
 
@@ -724,6 +737,8 @@ export function useMapLibre(
             cityName: residenceCity.name,
             visitCount: 0,
             isResidence: 1,
+            // 居住地无到达记录，不算点亮，由图例 residence 开关单独控制
+            isLit: 0,
           },
         })
       }
@@ -892,6 +907,77 @@ export function useMapLibre(
     map?.zoomOut({ duration: 300 })
   }
 
+  /**
+   * 根据图例可见性设置图层过滤。
+   *
+   * 4 类：visitLow(1次) / visitMid(2-3次) / visitHigh(4+次) / residence(居住地)
+   *
+   * 使用 setFilter 直接过滤 feature，比覆盖 paint opacity 更可靠：
+   * - city-dots / city-dots-halo：仅显示可见分类（点亮城市 + 居住地）
+   * - city-fill / city-border：显示未点亮城市（始终可见）+ 选中城市 + 可见分类
+   */
+  function setLegendVisibility(visibility: LegendVisibility): void {
+    if (!map) return
+
+    const { visitLow, visitMid, visitHigh, residence } = visibility
+
+    // 动态构建可见分类条件
+    const visibleConditions: FilterSpecification[] = []
+
+    // 居住地
+    if (residence) {
+      visibleConditions.push(['==', ['get', 'isResidence'], 1] as FilterSpecification)
+    }
+    // 点亮 + 1 次（非居住地）
+    if (visitLow) {
+      visibleConditions.push([
+        'all',
+        ['==', ['get', 'isLit'], 1],
+        ['==', ['get', 'isResidence'], 0],
+        ['<', ['get', 'visitCount'], 2],
+      ] as FilterSpecification)
+    }
+    // 点亮 + 2-3 次（非居住地）
+    if (visitMid) {
+      visibleConditions.push([
+        'all',
+        ['==', ['get', 'isLit'], 1],
+        ['==', ['get', 'isResidence'], 0],
+        ['>=', ['get', 'visitCount'], 2],
+        ['<', ['get', 'visitCount'], 4],
+      ] as FilterSpecification)
+    }
+    // 点亮 + 4+ 次（非居住地）
+    if (visitHigh) {
+      visibleConditions.push([
+        'all',
+        ['==', ['get', 'isLit'], 1],
+        ['==', ['get', 'isResidence'], 0],
+        ['>=', ['get', 'visitCount'], 4],
+      ] as FilterSpecification)
+    }
+
+    // city-dots / city-dots-halo：仅显示可见分类
+    // 全部隐藏时用不可能匹配的条件
+    const dotsFilter: FilterSpecification = visibleConditions.length === 0
+      ? (['==', ['get', 'cityCode'], '__none__'] as FilterSpecification)
+      : (['any', ...visibleConditions] as FilterSpecification)
+
+    map.setFilter('city-dots', dotsFilter)
+    map.setFilter('city-dots-halo', dotsFilter)
+
+    // city-fill / city-border：未点亮城市 + 选中城市始终可见，再叠加可见分类
+    const fillConditions: FilterSpecification[] = [
+      ['==', ['get', 'isLit'], 0] as FilterSpecification,       // 未点亮城市
+      ['==', ['get', 'isSelected'], 1] as FilterSpecification,  // 选中城市
+      ...visibleConditions,
+    ]
+    const fillFilter: FilterSpecification = ['any', ...fillConditions] as FilterSpecification
+
+    map.setFilter('city-fill', fillFilter)
+    map.setFilter('city-border', fillFilter)
+  }
+
   function resize(): void {
     map?.resize()
   }
@@ -932,5 +1018,6 @@ export function useMapLibre(
     zoomIn,
     zoomOut,
     resize,
+    setLegendVisibility,
   }
 }

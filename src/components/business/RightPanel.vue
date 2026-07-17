@@ -138,7 +138,7 @@ function handleRecordEdit(record: VisitRecord): void {
     <header v-if="mapStore.selectedCity" class="shrink-0 border-b border-border px-5 py-4">
       <div class="flex items-start justify-between">
         <div>
-          <h2 class="text-xl font-bold tracking-tight text-foreground">
+          <h2 class="text-lg font-bold tracking-tight text-foreground">
             {{ mapStore.selectedCity.name }}
           </h2>
           <p class="mt-0.5 text-xs text-muted-foreground">
@@ -214,8 +214,8 @@ function handleRecordEdit(record: VisitRecord): void {
             />
           </div>
 
-          <!-- 添加到达记录按钮：固定在列表末尾 -->
-          <div v-if="!isResidenceCity" class="shrink-0 px-4 pb-3">
+          <!-- 添加到达记录按钮：固定在列表末尾，样式与左侧"添加行程"一致 -->
+          <div v-if="!isResidenceCity" class="shrink-0 border-t border-border/60 px-4 py-3">
             <Button class="w-full" @click="switchToCreateMode">
               <Plus class="h-4 w-4" />
               添加到达记录

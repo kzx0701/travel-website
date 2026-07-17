@@ -71,21 +71,21 @@ function toggleImmersive() {
         </Button>
       </main>
 
-      <!-- 左侧悬浮面板（桌面端，非沉浸式时显示，垂直居中） -->
+      <!-- 左侧悬浮面板（桌面端，非沉浸式时显示，顶部对齐 + 底部留白避开图例） -->
       <Transition name="panel-left">
         <Card
           v-if="!immersive"
-          class="absolute left-3 top-1/2 z-10 hidden h-[85%] w-[320px] -translate-y-1/2 overflow-hidden bg-card/95 shadow-lg backdrop-blur lg:flex lg:flex-col"
+          class="absolute bottom-[180px] left-3 top-3 z-10 hidden w-[320px] overflow-hidden bg-card/95 shadow-lg backdrop-blur lg:flex lg:flex-col"
         >
           <slot name="left" />
         </Card>
       </Transition>
 
-      <!-- 右侧悬浮面板（桌面端，选中城市且非沉浸式时显示，垂直居中） -->
+      <!-- 右侧悬浮面板（桌面端，选中城市且非沉浸式时显示，顶部对齐 + 底部留白避开图例） -->
       <Transition name="panel-right">
         <Card
           v-if="!immersive && mapStore.selectedCity"
-          class="absolute right-3 top-1/2 z-10 hidden h-[85%] w-[320px] -translate-y-1/2 overflow-hidden bg-card/95 shadow-lg backdrop-blur lg:flex lg:flex-col"
+          class="absolute bottom-[180px] right-3 top-3 z-10 hidden w-[320px] overflow-hidden bg-card/95 shadow-lg backdrop-blur lg:flex lg:flex-col"
         >
           <slot name="right" />
         </Card>
