@@ -79,19 +79,14 @@ export const useVisitRecordStore = defineStore('visitRecord', () => {
   }
 
   /** 新建到达记录 */
-  async function create(
-    data: visitRecordApi.VisitRecordInput,
-  ): Promise<VisitRecord> {
+  async function create(data: visitRecordApi.VisitRecordInput): Promise<VisitRecord> {
     const record = await visitRecordApi.create(data)
     records.value = [record, ...records.value]
     return record
   }
 
   /** 更新到达记录 */
-  async function update(
-    id: string,
-    data: visitRecordApi.VisitRecordUpdate,
-  ): Promise<VisitRecord> {
+  async function update(id: string, data: visitRecordApi.VisitRecordUpdate): Promise<VisitRecord> {
     const record = await visitRecordApi.update(id, data)
     const idx = records.value.findIndex((r) => r.id === id)
     if (idx >= 0) records.value[idx] = record

@@ -120,10 +120,7 @@ export async function create(data: VisitRecordInput): Promise<VisitRecord> {
 /**
  * 更新到达记录
  */
-export async function update(
-  id: string,
-  data: VisitRecordUpdate,
-): Promise<VisitRecord> {
+export async function update(id: string, data: VisitRecordUpdate): Promise<VisitRecord> {
   const update: Record<string, unknown> = {}
   if (data.cityCode !== undefined) update.city_code = data.cityCode
   if (data.cityName !== undefined) update.city_name = data.cityName

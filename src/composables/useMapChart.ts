@@ -1,11 +1,7 @@
 import { onBeforeUnmount, onMounted, ref, shallowRef, type Ref } from 'vue'
 import * as echarts from 'echarts'
 import type { City, MapLevel } from '@/types'
-import {
-  provinces,
-  getProvinceCenter,
-  getCityByCode,
-} from '@/data/cities'
+import { provinces, getProvinceCenter, getCityByCode } from '@/data/cities'
 import {
   registerMapForLevel,
   getMapName,
@@ -14,12 +10,7 @@ import {
   type GeoJSON,
   type GeoJSONFeature,
 } from '@/utils/mapGeoLoader'
-import {
-  MAP_COLORS,
-  TIER_COLORS,
-  getVisitColor,
-  getVisitTier,
-} from '@/utils/visitTier'
+import { MAP_COLORS, TIER_COLORS, getVisitColor, getVisitTier } from '@/utils/visitTier'
 
 /**
  * BaseMap 组件的输入参数
@@ -205,9 +196,7 @@ export function useMapChart(
 
   function getFeatureAdcode(feature: GeoJSONFeature): string {
     const adcode = feature.properties?.adcode
-    return typeof adcode === 'number' || typeof adcode === 'string'
-      ? String(adcode)
-      : ''
+    return typeof adcode === 'number' || typeof adcode === 'string' ? String(adcode) : ''
   }
 
   function getFeatureCenter(feature: GeoJSONFeature): [number, number] | null {
@@ -315,11 +304,7 @@ export function useMapChart(
           : item.isLit
             ? getVisitStrokeColor(item.visitCount, item.opacity)
             : `rgba(148, 163, 184, ${0.28 * item.opacity})`
-      const lineWidth = item.isSelected
-        ? 2.2
-        : item.isLit || item.isResidence
-          ? 1.4
-          : 0.8
+      const lineWidth = item.isSelected ? 2.2 : item.isLit || item.isResidence ? 1.4 : 0.8
       return {
         name: item.name,
         cityCode: item.cityCode,
@@ -468,7 +453,7 @@ export function useMapChart(
   function getVisitStrokeColor(visitCount: number, opacity: number): string {
     const tier = getVisitTier(visitCount)
     if (tier === 'high') return `rgba(224, 90, 32, ${0.85 * opacity})`
-    if (tier === 'mid') return `rgba(255, 107, 53, ${0.80 * opacity})`
+    if (tier === 'mid') return `rgba(255, 107, 53, ${0.8 * opacity})`
     return `rgba(185, 130, 90, ${0.75 * opacity})`
   }
 
@@ -484,9 +469,7 @@ export function useMapChart(
    */
   function buildGeoRegions(dimOpacity: number = DIM_OPACITY) {
     const focusedCode = focusedProvinceCode.value
-    const focusedName = focusedCode
-      ? provinces.find((p) => p.code === focusedCode)?.name
-      : null
+    const focusedName = focusedCode ? provinces.find((p) => p.code === focusedCode)?.name : null
 
     return provinces.map((p) => {
       const isFocused = focusedName === p.name
@@ -562,14 +545,8 @@ export function useMapChart(
     const currentZoom = opt?.geo?.[0]?.zoom ?? 1
 
     // 将省份 bbox 四角转为像素坐标
-    const topLeft = chart.value.convertToPixel('geo', [
-      bbox.minLng,
-      bbox.maxLat,
-    ])
-    const bottomRight = chart.value.convertToPixel('geo', [
-      bbox.maxLng,
-      bbox.minLat,
-    ])
+    const topLeft = chart.value.convertToPixel('geo', [bbox.minLng, bbox.maxLat])
+    const bottomRight = chart.value.convertToPixel('geo', [bbox.maxLng, bbox.minLat])
 
     if (!topLeft || !bottomRight) return null
 
@@ -678,7 +655,8 @@ export function useMapChart(
           fontSize: 12,
           fontFamily: 'Geist, ui-sans-serif, sans-serif',
         },
-        extraCssText: 'border-radius: 8px; box-shadow: 0 4px 12px -2px rgba(0,0,0,0.08), 0 2px 4px -1px rgba(0,0,0,0.04); backdrop-filter: blur(8px);',
+        extraCssText:
+          'border-radius: 8px; box-shadow: 0 4px 12px -2px rgba(0,0,0,0.08), 0 2px 4px -1px rgba(0,0,0,0.04); backdrop-filter: blur(8px);',
       },
       geo: {
         map: mapName ?? '',
@@ -718,7 +696,7 @@ export function useMapChart(
           type: 'map',
           map: detailLayerProvinceCode
             ? getMapName('province', detailLayerProvinceCode)
-            : mapName ?? 'china',
+            : (mapName ?? 'china'),
           roam: false,
           silent: false,
           animation: false,
@@ -892,21 +870,28 @@ export function useMapChart(
     const scatterData = buildScatterData()
     if (detailLayerGeo && detailLayerProvinceCode) {
       const opacity = detailLayerData[0]?.opacity ?? 0
-      detailLayerData = buildProvinceDetailData(
-        detailLayerGeo,
-        detailLayerProvinceCode,
-        opacity,
-      )
+      detailLayerData = buildProvinceDetailData(detailLayerGeo, detailLayerProvinceCode, opacity)
     }
     // 省级/市级视图下由 province-detail 区域填充表达点亮，隐藏 scatter 中心点
     const showScatterPoints = params.value.level === 'country'
-    chart.value.setOption({
-      series: [
-        { id: 'province-detail', data: buildProvinceDetailMapData() },
-        { id: 'cities', data: scatterData.filter((d) => !d.isResidence), itemStyle: { opacity: showScatterPoints ? 1 : 0 } },
-        { id: 'residence', data: scatterData.filter((d) => d.isResidence), itemStyle: { opacity: showScatterPoints ? 1 : 0 } },
-      ],
-    }, { notMerge: false })
+    chart.value.setOption(
+      {
+        series: [
+          { id: 'province-detail', data: buildProvinceDetailMapData() },
+          {
+            id: 'cities',
+            data: scatterData.filter((d) => !d.isResidence),
+            itemStyle: { opacity: showScatterPoints ? 1 : 0 },
+          },
+          {
+            id: 'residence',
+            data: scatterData.filter((d) => d.isResidence),
+            itemStyle: { opacity: showScatterPoints ? 1 : 0 },
+          },
+        ],
+      },
+      { notMerge: false },
+    )
   }
 
   /**
@@ -915,12 +900,15 @@ export function useMapChart(
   function updateScatterOpacity(): void {
     if (!chart.value) return
     const showScatterPoints = params.value.level === 'country'
-    chart.value.setOption({
-      series: [
-        { id: 'cities', itemStyle: { opacity: showScatterPoints ? 1 : 0 } },
-        { id: 'residence', itemStyle: { opacity: showScatterPoints ? 1 : 0 } },
-      ],
-    }, { notMerge: false })
+    chart.value.setOption(
+      {
+        series: [
+          { id: 'cities', itemStyle: { opacity: showScatterPoints ? 1 : 0 } },
+          { id: 'residence', itemStyle: { opacity: showScatterPoints ? 1 : 0 } },
+        ],
+      },
+      { notMerge: false },
+    )
   }
 
   /**
@@ -987,11 +975,7 @@ export function useMapChart(
    * @param toDim 目标暗化 opacity
    * @param duration 过渡时长 ms
    */
-  function animateRegionsDim(
-    fromDim: number,
-    toDim: number,
-    duration: number,
-  ): void {
+  function animateRegionsDim(fromDim: number, toDim: number, duration: number): void {
     if (!chart.value) return
     clearRegionsAnim()
     const start = performance.now()

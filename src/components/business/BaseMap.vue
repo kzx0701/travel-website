@@ -2,7 +2,11 @@
 import { computed, ref, watch } from 'vue'
 import { Button } from '@/components/ui/button'
 import type { City, MapLevel } from '@/types'
-import { useMapLibre, type UseMapLibreParams, type UseMapLibreCallbacks } from '@/composables/useMapLibre'
+import {
+  useMapLibre,
+  type UseMapLibreParams,
+  type UseMapLibreCallbacks,
+} from '@/composables/useMapLibre'
 import { provinces, getCityByCode } from '@/data/cities'
 import 'maplibre-gl/dist/maplibre-gl.css'
 
@@ -73,16 +77,8 @@ const callbacks = computed<UseMapLibreCallbacks>(() => ({
   },
 }))
 
-const {
-  loading,
-  mapAvailable,
-  currentZoom,
-  zoomIn,
-  zoomOut,
-  updateData,
-  focusProvince,
-  unfocus,
-} = useMapLibre(containerRef, mapParams, callbacks)
+const { loading, mapAvailable, currentZoom, zoomIn, zoomOut, updateData, focusProvince, unfocus } =
+  useMapLibre(containerRef, mapParams, callbacks)
 
 // 暴露 unfocus 给父组件，用于"点击中国"时重新聚焦视角
 defineExpose({ unfocus })
@@ -126,14 +122,14 @@ watch(
       ref="containerRef"
       class="absolute inset-0 map-canvas"
       :class="{ 'map-entering': !loading }"
-      style="width: 100%; height: 100%;"
+      style="width: 100%; height: 100%"
     />
 
     <!-- 加载遮罩：脉冲地球 + 渐变文字，Transition 淡出 -->
     <Transition name="loading-fade">
       <div
         v-if="loading"
-        class="absolute inset-0 z-10 flex items-center justify-center bg-zinc-50/70 backdrop-blur-md"
+        class="absolute inset-0 z-10 flex items-center justify-center bg-background/70 backdrop-blur-md"
       >
         <div class="flex flex-col items-center gap-5">
           <!-- 脉冲地球 -->
@@ -151,34 +147,36 @@ watch(
     <!-- GeoJSON 缺失提示（降级提示，不阻塞渲染） -->
     <div
       v-if="!loading && !mapAvailable"
-      class="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-md bg-amber-50/95 px-3 py-1.5 text-xs text-amber-700 shadow-sm ring-1 ring-amber-200"
+      class="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-md bg-card/95 px-3 py-1.5 text-xs text-muted-foreground shadow-sm ring-1 ring-border"
     >
       未检测到 GeoJSON 文件，当前为降级渲染模式。请参考
-      <code class="font-mono text-amber-800">src/data/README_DATA.md</code> 下载地图数据。
+      <code class="font-mono text-foreground">src/data/README_DATA.md</code> 下载地图数据。
     </div>
 
     <!-- 缩放控制按钮组（左下角，含比例百分比） -->
     <Transition name="ui-fade">
       <div
         v-if="!readonly && !loading"
-        class="absolute bottom-3 left-3 z-10 flex items-center gap-1 rounded-lg bg-white/80 p-1 shadow-sm ring-1 ring-zinc-200/60 backdrop-blur-md"
+        class="absolute bottom-3 left-3 z-10 flex items-center gap-1 rounded-lg bg-background/90 p-1 shadow-sm ring-1 ring-border/60 backdrop-blur-md"
       >
         <Button
           variant="ghost"
           size="icon-sm"
-          class="size-7 rounded-md text-base text-zinc-600 hover:bg-zinc-100 hover:text-primary"
+          class="size-7 rounded-md text-base text-muted-foreground hover:bg-accent hover:text-primary"
           title="缩小"
           @click="zoomOut"
         >
           −
         </Button>
-        <span class="min-w-[3rem] text-center text-xs font-medium tabular-nums text-zinc-600">
+        <span
+          class="min-w-[3rem] text-center text-xs font-medium tabular-nums text-muted-foreground"
+        >
           {{ Math.round(currentZoom * 100) }}%
         </span>
         <Button
           variant="ghost"
           size="icon-sm"
-          class="size-7 rounded-md text-base text-zinc-600 hover:bg-zinc-100 hover:text-primary"
+          class="size-7 rounded-md text-base text-muted-foreground hover:bg-accent hover:text-primary"
           title="放大"
           @click="zoomIn"
         >
@@ -191,36 +189,36 @@ watch(
     <Transition name="ui-fade">
       <div
         v-if="!loading"
-        class="pointer-events-none absolute bottom-3 right-3 z-10 flex flex-col gap-1.5 rounded-lg bg-white/80 px-3.5 py-2.5 text-xs text-zinc-600 shadow-sm ring-1 ring-zinc-200/60 backdrop-blur-md"
+        class="pointer-events-none absolute bottom-3 right-3 z-10 flex flex-col gap-1.5 rounded-lg bg-background/90 px-3.5 py-2.5 text-xs text-muted-foreground shadow-sm ring-1 ring-border/60 backdrop-blur-md"
       >
-        <div class="mb-0.5 text-[10px] font-medium uppercase tracking-wider text-zinc-400">
+        <div class="mb-0.5 text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
           图例
         </div>
         <div class="flex items-center gap-2">
           <span
             class="inline-block h-2.5 w-2.5 rounded-full"
-            style="background-color: #FFB380; box-shadow: 0 0 0 3px rgba(255, 179, 128, 0.15);"
+            style="background-color: #ffb380; box-shadow: 0 0 0 3px rgba(255, 179, 128, 0.15)"
           />
           <span>到达 1 次</span>
         </div>
         <div class="flex items-center gap-2">
           <span
             class="inline-block h-2.5 w-2.5 rounded-full"
-            style="background-color: #FF6B35; box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.18);"
+            style="background-color: #ff6b35; box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.18)"
           />
           <span>到达 2-3 次</span>
         </div>
         <div class="flex items-center gap-2">
           <span
             class="inline-block h-2.5 w-2.5 rounded-full"
-            style="background-color: #E05A20; box-shadow: 0 0 0 3px rgba(224, 90, 32, 0.2);"
+            style="background-color: #e05a20; box-shadow: 0 0 0 3px rgba(224, 90, 32, 0.2)"
           />
           <span>到达 4+ 次</span>
         </div>
         <div class="flex items-center gap-2">
           <span
             class="inline-block h-2.5 w-2.5 rounded-full"
-            style="background-color: #3B82F6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18);"
+            style="background-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.18)"
           />
           <span>居住地</span>
         </div>
@@ -274,20 +272,19 @@ watch(
   position: absolute;
   inset: 0;
   border-radius: 50%;
-  border: 1.5px solid #5b6b7a;
+  border: 1.5px solid hsl(var(--muted-foreground));
   opacity: 0;
   animation: map-loader-pulse 2s cubic-bezier(0.22, 1, 0.36, 1) infinite;
 }
 .map-loader-ring:nth-child(2) {
   animation-delay: 1s;
 }
-/* 中心球体：冷灰蓝渐变，呼应地图海洋色 */
 .map-loader-core {
   position: absolute;
   inset: 14px;
   border-radius: 50%;
-  background: radial-gradient(circle at 30% 30%, #d6e2ee 0%, #bcd0df 60%, #94a8b8 100%);
-  box-shadow: 0 0 12px rgba(188, 208, 223, 0.6);
+  background: hsl(var(--muted));
+  box-shadow: 0 0 0 1px hsl(var(--border));
 }
 @keyframes map-loader-pulse {
   0% {
@@ -302,13 +299,18 @@ watch(
 
 /* ============================ 渐变文字 ============================ */
 .map-loader-text {
-  color: #5b6b7a;
-  letter-spacing: 0.1em;
+  color: hsl(var(--muted-foreground));
+  letter-spacing: 0;
   animation: map-loader-text-fade 1.8s ease-in-out infinite;
 }
 @keyframes map-loader-text-fade {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
+  0%,
+  100% {
+    opacity: 0.5;
+  }
+  50% {
+    opacity: 1;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -25,7 +25,7 @@ const iconSize = computed(() => (props.icon === 'map' ? 56 : 48))
 
 <template>
   <section
-    class="flex flex-col items-center justify-center rounded-xl border border-dashed border-slate-200 bg-white/60 px-6 py-20 text-center"
+    class="flex flex-col items-center justify-center rounded-lg border border-dashed bg-card px-6 py-20 text-center text-card-foreground"
   >
     <!-- 图标 -->
     <MapPin
@@ -40,15 +40,10 @@ const iconSize = computed(() => (props.icon === 'map' ? 56 : 48))
       :stroke-width="1.5"
       class="mb-4 text-muted-foreground/40"
     />
-    <Search
-      v-else
-      :size="iconSize"
-      :stroke-width="1.5"
-      class="mb-4 text-muted-foreground/40"
-    />
+    <Search v-else :size="iconSize" :stroke-width="1.5" class="mb-4 text-muted-foreground/40" />
 
-    <p class="text-sm font-medium text-slate-500">{{ title }}</p>
-    <p v-if="subtitle" class="mt-1 text-xs text-slate-400">
+    <p class="text-sm font-medium text-muted-foreground">{{ title }}</p>
+    <p v-if="subtitle" class="mt-1 text-xs text-muted-foreground/80">
       {{ subtitle }}
     </p>
     <div v-if="$slots.action" class="mt-4">

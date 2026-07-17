@@ -26,17 +26,13 @@ export const useResidenceStore = defineStore('residence', () => {
   }
 
   /** 保存居住地（不存在则插入，存在则更新） */
-  async function save(
-    data: residenceApi.ResidenceInput,
-  ): Promise<Residence> {
+  async function save(data: residenceApi.ResidenceInput): Promise<Residence> {
     residence.value = await residenceApi.saveResidence(data)
     return residence.value
   }
 
   /** 更新居住地（仅更新提供的字段，必须已存在） */
-  async function update(
-    data: Partial<residenceApi.ResidenceInput>,
-  ): Promise<Residence> {
+  async function update(data: Partial<residenceApi.ResidenceInput>): Promise<Residence> {
     residence.value = await residenceApi.updateResidence(data)
     return residence.value
   }

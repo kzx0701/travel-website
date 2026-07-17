@@ -36,10 +36,7 @@ export const useTripStore = defineStore('trip', () => {
   }): Promise<Trip> {
     const trip = await tripApi.create(data)
     // 新建行程尚无关联记录，聚合字段为 0
-    trips.value = [
-      { ...trip, recordCount: 0, cityCount: 0 },
-      ...trips.value,
-    ]
+    trips.value = [{ ...trip, recordCount: 0, cityCount: 0 }, ...trips.value]
     return trip
   }
 
@@ -65,10 +62,7 @@ export const useTripStore = defineStore('trip', () => {
    * @param id 行程 id
    * @param option.deleteRecords true 一并删除关联记录；false 仅解绑（trip_id 置空）
    */
-  async function remove(
-    id: string,
-    option: { deleteRecords: boolean },
-  ): Promise<void> {
+  async function remove(id: string, option: { deleteRecords: boolean }): Promise<void> {
     await tripApi.remove(id, option)
     trips.value = trips.value.filter((t) => t.id !== id)
     // 关联记录要么被删除（deleteRecords=true），要么 trip_id 被置空（false），

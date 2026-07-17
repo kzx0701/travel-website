@@ -6,13 +6,7 @@ import * as z from 'zod'
 import { toast } from 'vue-sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import {
   Dialog,
   DialogContent,
@@ -70,10 +64,7 @@ const schema = toTypedSchema(
       .string({ required_error: '请输入行程名称' })
       .min(1, '请输入行程名称')
       .max(100, '名称不超过 100 字'),
-    dateRange: z
-      .array(z.string())
-      .length(2, '请选择行程日期范围')
-      .or(z.null()),
+    dateRange: z.array(z.string()).length(2, '请选择行程日期范围').or(z.null()),
   }),
 )
 
@@ -100,10 +91,7 @@ watch(
           // 行程必有日期范围，兜底用 startDate 占位
           setValues({
             name: props.trip.name,
-            dateRange: [
-              props.trip.startDate,
-              props.trip.endDate ?? props.trip.startDate,
-            ],
+            dateRange: [props.trip.startDate, props.trip.endDate ?? props.trip.startDate],
           })
         }
       } else {
@@ -141,19 +129,14 @@ const onSubmit = handleSubmit((values) => {
 })
 
 // DatePicker range 模式回传 [string, string] | null（包装器 emit 类型为 string | [string, string] | null）
-function handleDateRangeChange(
-  value: string | [string, string] | null,
-): void {
+function handleDateRangeChange(value: string | [string, string] | null): void {
   if (typeof value === 'string') return
   setFieldValue('dateRange', value)
 }
 </script>
 
 <template>
-  <Dialog
-    :open="visible"
-    @update:open="(v) => emit('update:visible', v)"
-  >
+  <Dialog :open="visible" @update:open="(v) => emit('update:visible', v)">
     <DialogContent class="max-w-[420px]">
       <DialogHeader>
         <DialogTitle>{{ title }}</DialogTitle>
@@ -167,11 +150,7 @@ function handleDateRangeChange(
           <FormItem>
             <FormLabel>行程名称</FormLabel>
             <FormControl>
-              <Input
-                placeholder="如：2024 春节江浙行"
-                maxlength="100"
-                v-bind="componentField"
-              />
+              <Input placeholder="如：2024 春节江浙行" maxlength="100" v-bind="componentField" />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -194,19 +173,10 @@ function handleDateRangeChange(
       </form>
 
       <DialogFooter>
-        <Button
-          variant="outline"
-          size="sm"
-          :disabled="loading"
-          @click="handleCancel"
-        >
+        <Button variant="outline" size="sm" :disabled="loading" @click="handleCancel">
           取消
         </Button>
-        <Button
-          size="sm"
-          :disabled="loading"
-          @click="onSubmit"
-        >
+        <Button size="sm" :disabled="loading" @click="onSubmit">
           {{ loading ? '提交中...' : isEdit ? '保存' : '创建' }}
         </Button>
       </DialogFooter>

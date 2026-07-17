@@ -15,8 +15,6 @@ export function searchCities(keyword: string, limit = 10): City[] {
 
   const kw = trimmed.toLowerCase()
   return cities
-    .filter(
-      (c) => c.name.includes(trimmed) || c.pinyin.toLowerCase().includes(kw),
-    )
+    .filter((c) => c.name.includes(trimmed) || c.pinyin.toLowerCase().includes(kw))
     .slice(0, limit)
 }

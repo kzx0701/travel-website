@@ -23,12 +23,8 @@ const activeIndex = ref(-1)
 const rootRef = ref<HTMLElement | null>(null)
 
 const results = computed(() => searchCities(debouncedKeyword.value, 10))
-const isSearching = computed(
-  () => keyword.value.trim() !== debouncedKeyword.value.trim(),
-)
-const showDropdown = computed(
-  () => isOpen.value && keyword.value.trim().length > 0,
-)
+const isSearching = computed(() => keyword.value.trim() !== debouncedKeyword.value.trim())
+const showDropdown = computed(() => isOpen.value && keyword.value.trim().length > 0)
 
 watch(keyword, (val) => {
   isOpen.value = val.trim().length > 0
@@ -97,12 +93,10 @@ onBeforeUnmount(() => document.removeEventListener('click', handleClickOutside))
     >
       <div
         v-if="showDropdown"
-        class="absolute left-0 right-0 mt-1.5 rounded-xl border border-border bg-popover shadow-md overflow-hidden z-50"
+        class="absolute left-0 right-0 mt-1.5 rounded-lg border border-border bg-popover shadow-md overflow-hidden z-50"
       >
         <!-- 搜索中 -->
-        <div v-if="isSearching" class="px-4 py-3 text-sm text-muted-foreground">
-          搜索中...
-        </div>
+        <div v-if="isSearching" class="px-4 py-3 text-sm text-muted-foreground">搜索中...</div>
         <!-- 无结果 -->
         <div
           v-else-if="results.length === 0"

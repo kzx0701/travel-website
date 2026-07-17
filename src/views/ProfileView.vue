@@ -40,13 +40,9 @@ const avatarUrl = computed(() =>
 const stats = computed(() => visitRecordStore.stats)
 const litCities = computed<City[]>(() => visitRecordStore.litCities)
 const cityVisitCount = computed(() => visitRecordStore.cityVisitCount)
-const residenceCityCode = computed(
-  () => residenceStore.residence?.cityCode ?? '',
-)
+const residenceCityCode = computed(() => residenceStore.residence?.cityCode ?? '')
 
-const isPublic = computed(
-  () => profileSettingsStore.settings?.isPublic ?? false,
-)
+const isPublic = computed(() => profileSettingsStore.settings?.isPublic ?? false)
 
 const loading = ref(true)
 
@@ -59,9 +55,7 @@ onMounted(async () => {
       profileSettingsStore.settings
         ? Promise.resolve()
         : profileSettingsStore.load().catch(() => {}),
-      residenceStore.residence
-        ? Promise.resolve()
-        : residenceStore.load().catch(() => {}),
+      residenceStore.residence ? Promise.resolve() : residenceStore.load().catch(() => {}),
     ])
   } finally {
     loading.value = false
@@ -108,15 +102,10 @@ async function handleTripEditSubmit(data: {
   }
 }
 
-async function handleTripDelete(
-  trip: Trip,
-  option: { deleteRecords: boolean },
-): Promise<void> {
+async function handleTripDelete(trip: Trip, option: { deleteRecords: boolean }): Promise<void> {
   try {
     await tripStore.remove(trip.id, option)
-    toast.success(
-      option.deleteRecords ? '行程及关联记录已删除' : '行程已删除（记录已保留）',
-    )
+    toast.success(option.deleteRecords ? '行程及关联记录已删除' : '行程已删除（记录已保留）')
   } catch (e) {
     toast.error(e instanceof Error ? e.message : '删除失败')
   }
@@ -124,25 +113,21 @@ async function handleTripDelete(
 </script>
 
 <template>
-  <div class="h-full overflow-hidden bg-slate-50">
+  <div class="h-full overflow-hidden bg-muted/40">
     <!-- 内容区 -->
     <main class="h-full overflow-y-auto">
       <div class="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:py-10">
         <!-- 页面标题 + 可见性入口 -->
         <div class="mb-6 flex items-start justify-between gap-3">
           <div>
-            <h1 class="font-serif text-2xl tracking-tight text-slate-800">
-              个人主页
-            </h1>
-            <p class="mt-1 text-sm text-slate-500">
-              你的足迹概览与公开主页管理
-            </p>
+            <h1 class="font-serif text-2xl tracking-tight text-foreground">个人主页</h1>
+            <p class="mt-1 text-sm text-muted-foreground">你的足迹概览与公开主页管理</p>
           </div>
           <Button as-child variant="outline" class="shrink-0">
             <router-link to="/settings">
               <span
                 class="inline-block h-2 w-2 rounded-full"
-                :class="isPublic ? 'bg-green-500' : 'bg-slate-300'"
+                :class="isPublic ? 'bg-green-500' : 'bg-muted-foreground/30'"
               />
               {{ isPublic ? '公开中' : '私密' }}
               <ChevronRight class="h-3.5 w-3.5 text-muted-foreground" />
@@ -152,55 +137,44 @@ async function handleTripDelete(
 
         <!-- 加载骨架屏 -->
         <div v-if="loading" class="space-y-6">
-          <Skeleton class="h-32 rounded-xl" />
-          <Skeleton class="h-80 rounded-xl" />
-          <Skeleton class="h-40 rounded-xl" />
+          <Skeleton class="h-32 rounded-lg" />
+          <Skeleton class="h-80 rounded-lg" />
+          <Skeleton class="h-40 rounded-lg" />
         </div>
 
         <template v-else>
           <!-- 用户卡片 -->
-          <section
-            class="mb-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
-          >
+          <section class="mb-6 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
             <div class="flex flex-col items-center gap-4 px-6 py-6 sm:flex-row sm:items-center">
               <!-- 头像（大） -->
               <img
                 v-if="avatarUrl"
                 :src="avatarUrl"
                 alt="头像"
-                class="h-20 w-20 rounded-full bg-slate-100 ring-2 ring-slate-100"
+                class="h-20 w-20 rounded-full bg-muted ring-2 ring-border"
               />
               <div
                 v-else
-                class="flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 text-2xl font-bold text-slate-500 ring-2 ring-slate-100"
+                class="flex h-20 w-20 items-center justify-center rounded-full bg-muted text-2xl font-bold text-muted-foreground ring-2 ring-border"
               >
                 {{ user?.email?.charAt(0)?.toUpperCase() ?? '?' }}
               </div>
 
               <!-- 用户名 + 邮箱 -->
               <div class="min-w-0 flex-1 text-center sm:text-left">
-                <h2 class="truncate text-xl font-bold text-slate-800">
+                <h2 class="truncate text-xl font-bold text-foreground">
                   {{ user?.displayName ?? '旅行者' }}
                 </h2>
-                <p class="mt-1 truncate text-sm text-slate-400">
+                <p class="mt-1 truncate text-sm text-muted-foreground">
                   {{ user?.email ?? '—' }}
                 </p>
               </div>
 
               <!-- 统计概览 -->
               <div class="grid w-full grid-cols-3 gap-2 sm:w-auto sm:gap-3">
-                <StatCard
-                  label="点亮国家"
-                  :value="stats.litCountryCount"
-                />
-                <StatCard
-                  label="点亮城市"
-                  :value="stats.litCityCount"
-                />
-                <StatCard
-                  label="出行次数"
-                  :value="stats.totalTripCount"
-                />
+                <StatCard label="点亮国家" :value="stats.litCountryCount" />
+                <StatCard label="点亮城市" :value="stats.litCityCount" />
+                <StatCard label="出行次数" :value="stats.totalTripCount" />
               </div>
             </div>
           </section>
@@ -214,22 +188,16 @@ async function handleTripDelete(
           >
             <template #action>
               <Button as-child>
-                <router-link to="/">
-                  去地图
-                </router-link>
+                <router-link to="/"> 去地图 </router-link>
               </Button>
             </template>
           </EmptyState>
 
           <template v-else>
             <!-- 点亮地图只读 -->
-            <section
-              class="mb-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
-            >
-              <div class="border-b border-slate-100 px-4 py-3">
-                <h2 class="text-sm font-semibold text-slate-700">
-                  点亮地图
-                </h2>
+            <section class="mb-6 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+              <div class="border-b border-border px-4 py-3">
+                <h2 class="text-sm font-semibold text-foreground">点亮地图</h2>
               </div>
               <div class="relative h-96">
                 <BaseMap
@@ -243,16 +211,14 @@ async function handleTripDelete(
             </section>
 
             <!-- 行程列表 -->
-            <section
-              class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
-            >
-              <div class="border-b border-slate-100 px-4 py-3">
-                <h2 class="text-sm font-semibold text-slate-700">我的行程</h2>
+            <section class="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+              <div class="border-b border-border px-4 py-3">
+                <h2 class="text-sm font-semibold text-foreground">我的行程</h2>
               </div>
               <div class="px-4 py-4">
                 <div
                   v-if="tripStore.trips.length === 0"
-                  class="py-8 text-center text-xs text-slate-400"
+                  class="py-8 text-center text-xs text-muted-foreground"
                 >
                   暂无行程
                 </div>

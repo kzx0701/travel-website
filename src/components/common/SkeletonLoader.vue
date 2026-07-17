@@ -38,7 +38,7 @@ withDefaults(
 
     <!-- 卡片模式：单块占位 -->
     <template v-else-if="mode === 'card'">
-      <Skeleton class="h-32 w-full rounded-xl" />
+      <Skeleton class="h-32 w-full rounded-lg" />
     </template>
 
     <!-- 自定义插槽 -->

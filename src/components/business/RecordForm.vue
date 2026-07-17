@@ -8,13 +8,7 @@ import PurposeSelect from './PurposeSelect.vue'
 import TripSelector from './TripSelector.vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
   Select,
@@ -92,9 +86,7 @@ const schema = toTypedSchema(
   z.object({
     startDate: z.string().optional(),
     endDate: z.string().nullable().optional(),
-    purpose: z
-      .string({ required_error: '请选择出行目的' })
-      .min(1, '请选择出行目的'),
+    purpose: z.string({ required_error: '请选择出行目的' }).min(1, '请选择出行目的'),
     note: z.string().max(50, '备注不超过 50 字').optional().or(z.literal('')),
     tripId: z.string().nullable().optional(),
   }),
@@ -172,17 +164,20 @@ onMounted(() => {
 })
 
 // ---- 各模式选择回调 ----
-function handleYearChange(v: string): void {
+function handleYearChange(v: unknown): void {
+  if (typeof v !== 'string') return
   yearValue.value = v
   setFieldValue('startDate', `${v}-01-01`)
 }
 
-function handleMonthYearChange(v: string): void {
+function handleMonthYearChange(v: unknown): void {
+  if (typeof v !== 'string') return
   monthYearValue.value = v
   syncMonthStartDate()
 }
 
-function handleMonthChange(v: string): void {
+function handleMonthChange(v: unknown): void {
+  if (typeof v !== 'string') return
   monthValue.value = v
   syncMonthStartDate()
 }
@@ -293,13 +288,13 @@ function handleCancel(): void {
 <template>
   <div class="flex h-full flex-col">
     <!-- 顶部信息 -->
-    <div class="shrink-0 border-b border-slate-100 px-5 py-4">
+    <div class="shrink-0 border-b border-border px-5 py-4">
       <div class="flex items-baseline justify-between">
         <div>
-          <h2 class="text-lg font-bold tracking-tight text-slate-800">
+          <h2 class="text-lg font-bold tracking-tight text-foreground">
             {{ record ? '编辑记录' : '添加到达记录' }}
           </h2>
-          <p class="mt-0.5 text-xs text-slate-400">
+          <p class="mt-0.5 text-xs text-muted-foreground">
             {{ city.name }} · {{ city.provinceName }}
           </p>
         </div>
@@ -320,28 +315,27 @@ function handleCancel(): void {
             >
               <div class="flex items-center gap-1.5">
                 <RadioGroupItem id="dm-year" value="year" />
-                <label for="dm-year" class="cursor-pointer text-sm text-slate-700">仅年份</label>
+                <label for="dm-year" class="cursor-pointer text-sm text-foreground">仅年份</label>
               </div>
               <div class="flex items-center gap-1.5">
                 <RadioGroupItem id="dm-month" value="month" />
-                <label for="dm-month" class="cursor-pointer text-sm text-slate-700">年月</label>
+                <label for="dm-month" class="cursor-pointer text-sm text-foreground">年月</label>
               </div>
               <div class="flex items-center gap-1.5">
                 <RadioGroupItem id="dm-day" value="day" />
-                <label for="dm-day" class="cursor-pointer text-sm text-slate-700">具体日期</label>
+                <label for="dm-day" class="cursor-pointer text-sm text-foreground">具体日期</label>
               </div>
               <div class="flex items-center gap-1.5">
                 <RadioGroupItem id="dm-range" value="range" />
-                <label for="dm-range" class="cursor-pointer text-sm text-slate-700">日期范围</label>
+                <label for="dm-range" class="cursor-pointer text-sm text-foreground"
+                  >日期范围</label
+                >
               </div>
             </RadioGroup>
 
             <!-- 仅年份 -->
             <FormControl v-if="dateMode === 'year'">
-              <Select
-                :model-value="yearValue"
-                @update:model-value="handleYearChange"
-              >
+              <Select :model-value="yearValue" @update:model-value="handleYearChange">
                 <SelectTrigger class="w-full">
                   <SelectValue placeholder="选择年份" />
                 </SelectTrigger>
@@ -361,10 +355,7 @@ function handleCancel(): void {
             <!-- 年月 -->
             <FormControl v-else-if="dateMode === 'month'">
               <div class="flex gap-2">
-                <Select
-                  :model-value="monthYearValue"
-                  @update:model-value="handleMonthYearChange"
-                >
+                <Select :model-value="monthYearValue" @update:model-value="handleMonthYearChange">
                   <SelectTrigger class="flex-1">
                     <SelectValue placeholder="选择年份" />
                   </SelectTrigger>
@@ -379,10 +370,7 @@ function handleCancel(): void {
                     </SelectItem>
                   </SelectContent>
                 </Select>
-                <Select
-                  :model-value="monthValue"
-                  @update:model-value="handleMonthChange"
-                >
+                <Select :model-value="monthValue" @update:model-value="handleMonthChange">
                   <SelectTrigger class="w-28">
                     <SelectValue placeholder="月份" />
                   </SelectTrigger>
@@ -463,9 +451,7 @@ function handleCancel(): void {
                 @update:model-value="(v: string | null) => setFieldValue('tripId', v)"
               />
             </FormControl>
-            <p class="mt-1 text-xs text-slate-400">
-              不关联行程的记录将独立存在
-            </p>
+            <p class="mt-1 text-xs text-muted-foreground">不关联行程的记录将独立存在</p>
             <FormMessage />
           </FormItem>
         </FormField>
@@ -473,20 +459,10 @@ function handleCancel(): void {
     </div>
 
     <!-- 底部操作 -->
-    <div class="shrink-0 border-t border-slate-100 px-5 py-3">
+    <div class="shrink-0 border-t border-border px-5 py-3">
       <div class="flex gap-2">
-        <Button
-          variant="outline"
-          class="h-9 flex-1"
-          @click="handleCancel"
-        >
-          取消
-        </Button>
-        <Button
-          class="h-9 flex-[1.5]"
-          :disabled="submitting"
-          @click="onSubmit"
-        >
+        <Button variant="outline" class="h-9 flex-1" @click="handleCancel"> 取消 </Button>
+        <Button class="h-9 flex-[1.5]" :disabled="submitting" @click="onSubmit">
           {{ submitting ? '提交中...' : submitLabel }}
         </Button>
       </div>

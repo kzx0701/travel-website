@@ -12,11 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Command,
   CommandEmpty,
@@ -145,10 +141,7 @@ function cancelCreate(): void {
         <CommandInput placeholder="搜索分类..." />
         <CommandList>
           <CommandEmpty>无匹配分类</CommandEmpty>
-          <CommandGroup
-            v-if="systemCategories.length"
-            heading="系统预设"
-          >
+          <CommandGroup v-if="systemCategories.length" heading="系统预设">
             <CommandItem
               v-for="cat in systemCategories"
               :key="cat.id"
@@ -162,10 +155,7 @@ function cancelCreate(): void {
               <span>{{ cat.name }}</span>
             </CommandItem>
           </CommandGroup>
-          <CommandGroup
-            v-if="customCategories.length"
-            heading="我的自定义"
-          >
+          <CommandGroup v-if="customCategories.length" heading="我的自定义">
             <CommandItem
               v-for="cat in customCategories"
               :key="cat.id"
@@ -181,10 +171,7 @@ function cancelCreate(): void {
           </CommandGroup>
           <CommandSeparator />
           <CommandGroup>
-            <CommandItem
-              :value="CREATE_SENTINEL"
-              @select="handleCreateSelect"
-            >
+            <CommandItem :value="CREATE_SENTINEL" @select="handleCreateSelect">
               <Plus class="size-4 text-primary" />
               <span class="text-primary">新建分类</span>
             </CommandItem>
@@ -195,16 +182,11 @@ function cancelCreate(): void {
   </Popover>
 
   <!-- 新建分类弹窗 -->
-  <Dialog
-    :open="newCategoryVisible"
-    @update:open="(v) => (newCategoryVisible = v)"
-  >
+  <Dialog :open="newCategoryVisible" @update:open="(v) => (newCategoryVisible = v)">
     <DialogContent class="max-w-[360px]">
       <DialogHeader>
         <DialogTitle>新建出行目的分类</DialogTitle>
-        <DialogDescription class="sr-only">
-          新建出行目的分类
-        </DialogDescription>
+        <DialogDescription class="sr-only"> 新建出行目的分类 </DialogDescription>
       </DialogHeader>
       <Input
         v-model="newCategoryName"
@@ -213,14 +195,8 @@ function cancelCreate(): void {
         @keyup.enter="confirmCreate"
       />
       <DialogFooter>
-        <Button variant="outline" size="sm" @click="cancelCreate">
-          取消
-        </Button>
-        <Button
-          size="sm"
-          :disabled="creating"
-          @click="confirmCreate"
-        >
+        <Button variant="outline" size="sm" @click="cancelCreate"> 取消 </Button>
+        <Button size="sm" :disabled="creating" @click="confirmCreate">
           {{ creating ? '创建中...' : '创建' }}
         </Button>
       </DialogFooter>

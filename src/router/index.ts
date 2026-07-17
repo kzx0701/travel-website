@@ -75,10 +75,7 @@ router.beforeEach(async (to) => {
   }
 
   // 已登录访问登录/注册页 → 跳转首页
-  if (
-    (to.name === 'login' || to.name === 'register') &&
-    auth.isAuthenticated
-  ) {
+  if ((to.name === 'login' || to.name === 'register') && auth.isAuthenticated) {
     return { path: '/' }
   }
 

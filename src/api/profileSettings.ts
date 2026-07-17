@@ -31,10 +31,7 @@ function mapRow(row: ProfileSettingsRow): ProfileSettings {
  * 获取当前用户的档案设置（每用户仅一条，无则返回 null）
  */
 export async function get(): Promise<ProfileSettings | null> {
-  const { data, error } = await supabase
-    .from('profile_settings')
-    .select('*')
-    .maybeSingle()
+  const { data, error } = await supabase.from('profile_settings').select('*').maybeSingle()
   if (error) throw new Error(error.message)
   return data ? mapRow(data as ProfileSettingsRow) : null
 }
@@ -42,9 +39,7 @@ export async function get(): Promise<ProfileSettings | null> {
 /**
  * 更新档案设置（不存在则插入，按 user_id 唯一约束 upsert）
  */
-export async function update(
-  data: ProfileSettingsUpdate,
-): Promise<ProfileSettings> {
+export async function update(data: ProfileSettingsUpdate): Promise<ProfileSettings> {
   const userId = await getCurrentUserId()
   const update: Record<string, unknown> = { user_id: userId }
   if (data.isPublic !== undefined) update.is_public = data.isPublic
@@ -70,10 +65,7 @@ export async function regenerateToken(): Promise<string> {
 
   const { error } = await supabase
     .from('profile_settings')
-    .upsert(
-      { user_id: userId, share_token: token },
-      { onConflict: 'user_id' },
-    )
+    .upsert({ user_id: userId, share_token: token }, { onConflict: 'user_id' })
   if (error) throw new Error(error.message)
   return token
 }

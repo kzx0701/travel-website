@@ -1,4 +1,5 @@
 import type { MapLevel } from '@/types'
+import * as echarts from 'echarts'
 
 /**
  * GeoJSON 类型（结构最小化声明）
@@ -31,6 +32,7 @@ export interface ProvinceBBox {
  * 省份名称 → 边界框的缓存（从 china.json 解析）
  */
 const provinceBBoxes = new Map<string, ProvinceBBox>()
+const registeredMaps = new Set<string>()
 
 /**
  * Vite 静态扫描 src/data/geo/ 下的所有 .json 文件
@@ -64,10 +66,7 @@ function getGeoPath(level: MapLevel, regionCode?: string): string | null {
  * 异步加载 GeoJSON 文件
  * 文件不存在或加载失败时返回 null（调用方需自行降级处理）
  */
-export async function loadGeoJson(
-  level: MapLevel,
-  regionCode?: string,
-): Promise<GeoJSON | null> {
+export async function loadGeoJson(level: MapLevel, regionCode?: string): Promise<GeoJSON | null> {
   const path = getGeoPath(level, regionCode)
   if (!path) return null
 
@@ -94,6 +93,25 @@ export async function loadGeoJson(
     console.warn(`[mapGeoLoader] GeoJSON 加载失败: ${path}`, err)
     return null
   }
+}
+
+export function getMapName(level: MapLevel, regionCode?: string): string {
+  return regionCode ? `travel-map-${level}-${regionCode}` : `travel-map-${level}`
+}
+
+export async function registerMapForLevel(
+  level: MapLevel,
+  regionCode?: string,
+): Promise<string | null> {
+  const mapName = getMapName(level, regionCode)
+  if (registeredMaps.has(mapName)) return mapName
+
+  const geo = await loadGeoJson(level, regionCode)
+  if (!geo) return null
+
+  echarts.registerMap(mapName, geo as unknown as Parameters<typeof echarts.registerMap>[1])
+  registeredMaps.add(mapName)
+  return mapName
 }
 
 /**

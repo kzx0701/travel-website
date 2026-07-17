@@ -10,11 +10,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { DatePicker } from '@/components/ui/date-picker'
 import type { City, CitySortKey } from '@/types'
 import { provinces } from '@/data/cities'
@@ -56,9 +52,7 @@ const sortOptions: { key: CitySortKey; label: string }[] = [
   { key: 'pinyin', label: '拼音' },
 ]
 
-const sortLabel = computed(
-  () => sortOptions.find((o) => o.key === props.sortKey)?.label ?? '排序',
-)
+const sortLabel = computed(() => sortOptions.find((o) => o.key === props.sortKey)?.label ?? '排序')
 
 const sortedCities = computed(() => {
   const list = [...props.cities]
@@ -71,11 +65,7 @@ const sortedCities = computed(() => {
       })
       break
     case 'count':
-      list.sort(
-        (a, b) =>
-          (props.cityVisitCount[b.code] ?? 0) -
-          (props.cityVisitCount[a.code] ?? 0),
-      )
+      list.sort((a, b) => (props.cityVisitCount[b.code] ?? 0) - (props.cityVisitCount[a.code] ?? 0))
       break
     case 'pinyin':
       list.sort((a, b) => a.pinyin.localeCompare(b.pinyin))
@@ -98,10 +88,7 @@ const filterPurpose = ref('')
 const filterDateRange = ref<[string, string] | null>(null)
 
 const hasActiveFilter = computed(
-  () =>
-    filterProvince.value !== ALL_PROVINCE ||
-    !!filterPurpose.value ||
-    !!filterDateRange.value,
+  () => filterProvince.value !== ALL_PROVINCE || !!filterPurpose.value || !!filterDateRange.value,
 )
 
 function applyFilter(): void {
@@ -143,11 +130,7 @@ function isResidence(city: City): boolean {
             <SelectValue>{{ sortLabel }}</SelectValue>
           </SelectTrigger>
           <SelectContent>
-            <SelectItem
-              v-for="opt in sortOptions"
-              :key="opt.key"
-              :value="opt.key"
-            >
+            <SelectItem v-for="opt in sortOptions" :key="opt.key" :value="opt.key">
               {{ opt.label }}
             </SelectItem>
           </SelectContent>
@@ -175,11 +158,7 @@ function isResidence(city: City): boolean {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem :value="ALL_PROVINCE">全部省份</SelectItem>
-                    <SelectItem
-                      v-for="p in provinces"
-                      :key="p.code"
-                      :value="p.code"
-                    >
+                    <SelectItem v-for="p in provinces" :key="p.code" :value="p.code">
                       {{ p.name }}
                     </SelectItem>
                   </SelectContent>
@@ -187,27 +166,17 @@ function isResidence(city: City): boolean {
               </div>
               <div class="flex flex-col gap-1.5">
                 <label class="text-xs text-muted-foreground">目的</label>
-                <Input
-                  v-model="filterPurpose"
-                  placeholder="输入出行目的"
-                  class="h-8 text-xs"
-                />
+                <Input v-model="filterPurpose" placeholder="输入出行目的" class="h-8 text-xs" />
               </div>
               <div class="flex flex-col gap-1.5">
                 <label class="text-xs text-muted-foreground">时间范围</label>
-                <DatePicker
-                  v-model="filterDateRange"
-                  range
-                  class="text-xs"
-                />
+                <DatePicker v-model="filterDateRange" range class="text-xs" />
               </div>
               <div class="flex justify-between gap-2 pt-1">
                 <Button variant="outline" size="xs" class="flex-1" @click="resetFilter">
                   重置
                 </Button>
-                <Button size="xs" class="flex-1" @click="applyFilter">
-                  应用
-                </Button>
+                <Button size="xs" class="flex-1" @click="applyFilter"> 应用 </Button>
               </div>
             </div>
           </PopoverContent>
@@ -218,26 +187,36 @@ function isResidence(city: City): boolean {
     <!-- 城市列表 -->
     <div class="flex-1 overflow-y-auto px-2 pb-3">
       <!-- 空状态 -->
-      <div v-if="sortedCities.length === 0"
-        class="flex flex-col items-center justify-center px-6 py-12 text-center">
+      <div
+        v-if="sortedCities.length === 0"
+        class="flex flex-col items-center justify-center px-6 py-12 text-center"
+      >
         <MapPin class="mb-3 size-10 text-muted-foreground/40" :stroke-width="1.5" />
         <p class="text-sm text-muted-foreground">还没有点亮的城市，去地图上点亮吧</p>
       </div>
 
       <!-- 城市项 -->
-      <div v-for="city in sortedCities" :key="city.code"
+      <div
+        v-for="city in sortedCities"
+        :key="city.code"
         class="group flex cursor-pointer items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-accent"
         :class="isResidence(city) ? 'bg-accent' : ''"
-        @click="emit('select', city)">
+        @click="emit('select', city)"
+      >
         <!-- 圆点 -->
-        <span class="size-2 shrink-0 rounded-full" :style="{ backgroundColor: getDotColor(city) }" />
+        <span
+          class="size-2 shrink-0 rounded-full"
+          :style="{ backgroundColor: getDotColor(city) }"
+        />
 
         <!-- 城市名 + 省份 -->
         <div class="min-w-0 flex-1">
           <div class="flex items-center gap-1">
             <span class="truncate text-sm font-semibold text-foreground">{{ city.name }}</span>
-            <span v-if="isResidence(city)"
-              class="shrink-0 rounded-full bg-secondary px-1.5 py-0.5 text-xs font-medium text-secondary-foreground">
+            <span
+              v-if="isResidence(city)"
+              class="shrink-0 rounded-full bg-secondary px-1.5 py-0.5 text-xs font-medium text-secondary-foreground"
+            >
               居住地
             </span>
           </div>
@@ -245,8 +224,14 @@ function isResidence(city: City): boolean {
         </div>
 
         <!-- 到达次数徽章 -->
-        <span class="inline-flex h-5 shrink-0 items-center justify-center rounded-md px-1.5 text-xs font-semibold tabular-nums"
-          :class="isResidence(city) ? 'bg-muted text-muted-foreground' : 'bg-secondary text-secondary-foreground'">
+        <span
+          class="inline-flex h-5 shrink-0 items-center justify-center rounded-md px-1.5 text-xs font-semibold tabular-nums"
+          :class="
+            isResidence(city)
+              ? 'bg-muted text-muted-foreground'
+              : 'bg-secondary text-secondary-foreground'
+          "
+        >
           {{ cityVisitCount[city.code] ?? 0 }}次
         </span>
 

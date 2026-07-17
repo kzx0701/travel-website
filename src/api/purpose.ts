@@ -118,9 +118,6 @@ export async function removeCustom(id: string): Promise<void> {
   if (updErr) throw new Error(updErr.message)
 
   // 3. 删除分类
-  const { error: delErr } = await supabase
-    .from('purpose_categories')
-    .delete()
-    .eq('id', id)
+  const { error: delErr } = await supabase.from('purpose_categories').delete().eq('id', id)
   if (delErr) throw new Error(delErr.message)
 }

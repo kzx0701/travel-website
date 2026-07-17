@@ -26,9 +26,7 @@ const tripStore = useTripStore()
 const router = useRouter()
 
 /** 是否未设置居住地（用于左侧引导提示） */
-const hasNoResidence = computed(
-  () => !residenceStore.residence && !residenceStore.loading,
-)
+const hasNoResidence = computed(() => !residenceStore.residence && !residenceStore.loading)
 
 function handleGotoSettings(): void {
   router.push('/settings')
@@ -198,7 +196,7 @@ async function handleTripSubmit(data: {
         </div>
 
         <!-- 快捷统计 -->
-        <div class="mx-4 mb-3 flex items-center rounded-xl border border-border/60 bg-card/60 p-3">
+        <div class="mx-4 mb-3 flex items-center rounded-lg border border-border/60 bg-card/60 p-3">
           <StatCard label="点亮国家" :value="stats.litCountryCount" />
           <Separator orientation="vertical" class="mx-1 h-8" />
           <StatCard label="点亮城市" :value="stats.litCityCount" />
@@ -216,9 +214,7 @@ async function handleTripSubmit(data: {
           <MapPin class="size-5 shrink-0 text-primary" />
           <div class="min-w-0 flex-1">
             <p class="text-sm font-medium text-primary">未设置居住地</p>
-            <p class="mt-0.5 text-xs text-muted-foreground">
-              前往设置，居住地所在城市将不被点亮
-            </p>
+            <p class="mt-0.5 text-xs text-muted-foreground">前往设置，居住地所在城市将不被点亮</p>
           </div>
           <ChevronRight class="size-4 shrink-0 text-muted-foreground/60" />
         </Button>
@@ -271,7 +267,7 @@ async function handleTripSubmit(data: {
 
       <!-- 面包屑：悬浮于地图左上角 -->
       <div
-        class="pointer-events-auto absolute left-3 top-3 z-10 rounded-lg bg-white/80 px-3 py-1.5 shadow-sm ring-1 ring-zinc-200/60 backdrop-blur-md"
+        class="pointer-events-auto absolute left-3 top-3 z-10 rounded-lg bg-background/90 px-3 py-1.5 shadow-sm ring-1 ring-border/60 backdrop-blur-md"
       >
         <MapBreadcrumb
           :level="mapStore.currentLevel"

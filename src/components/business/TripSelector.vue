@@ -3,11 +3,7 @@ import { ref, onMounted } from 'vue'
 import { toast } from 'vue-sonner'
 import { Plus, Check, ChevronsUpDown, CircleMinus } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Command,
   CommandEmpty,
@@ -54,9 +50,7 @@ onMounted(async () => {
 })
 
 function tripLabel(trip: Trip): string {
-  const date = trip.endDate
-    ? `${trip.startDate} — ${trip.endDate}`
-    : trip.startDate
+  const date = trip.endDate ? `${trip.startDate} — ${trip.endDate}` : trip.startDate
   return `${trip.name}（${date}）`
 }
 
@@ -128,11 +122,11 @@ function handleCreateCancel(): void {
           :class="!modelValue && 'text-muted-foreground'"
         >
           <span class="truncate">
-            <template v-if="!modelValue">
-              不关联行程
-            </template>
+            <template v-if="!modelValue"> 不关联行程 </template>
             <template v-else>
-              {{ tripLabel(tripStore.trips.find((t) => t.id === modelValue) ?? tripStore.trips[0]) }}
+              {{
+                tripLabel(tripStore.trips.find((t) => t.id === modelValue) ?? tripStore.trips[0])
+              }}
             </template>
           </span>
           <ChevronsUpDown class="h-4 w-4 shrink-0 opacity-50" />
@@ -144,16 +138,10 @@ function handleCreateCancel(): void {
           <CommandList>
             <CommandEmpty>无匹配行程</CommandEmpty>
             <CommandGroup heading="选择行程">
-              <CommandItem
-                :value="NONE_SENTINEL"
-                @select="selectValue(NONE_SENTINEL)"
-              >
+              <CommandItem :value="NONE_SENTINEL" @select="selectValue(NONE_SENTINEL)">
                 <CircleMinus class="h-4 w-4 text-muted-foreground" />
                 <span class="text-muted-foreground">不关联行程</span>
-                <Check
-                  v-if="!modelValue"
-                  class="ml-auto h-4 w-4"
-                />
+                <Check v-if="!modelValue" class="ml-auto h-4 w-4" />
               </CommandItem>
               <CommandItem
                 v-for="trip in tripStore.trips"
@@ -170,10 +158,7 @@ function handleCreateCancel(): void {
             </CommandGroup>
             <CommandSeparator />
             <CommandGroup>
-              <CommandItem
-                :value="CREATE_SENTINEL"
-                @select="handleCreateSelect"
-              >
+              <CommandItem :value="CREATE_SENTINEL" @select="handleCreateSelect">
                 <Plus class="h-4 w-4 text-primary" />
                 <span class="text-primary">新建行程</span>
               </CommandItem>

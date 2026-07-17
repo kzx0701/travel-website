@@ -1,9 +1,9 @@
 <script setup lang="ts">
-// 通用卡片组件
+import { Card } from '@/components/ui/card'
 </script>
 
 <template>
-  <div class="base-card">
+  <Card>
     <slot />
-  </div>
+  </Card>
 </template>

@@ -105,9 +105,7 @@ const filteredCityVisitCount = computed<Record<string, number>>(() => {
 const filteredTrips = computed(() => {
   const bounds = rangeBounds.value
   if (!bounds) return tripStore.trips
-  return tripStore.trips.filter(
-    (t) => t.startDate >= bounds.start && t.startDate <= bounds.end,
-  )
+  return tripStore.trips.filter((t) => t.startDate >= bounds.start && t.startDate <= bounds.end)
 })
 
 function recordsForTrip(tripId: string): VisitRecord[] {
@@ -129,172 +127,138 @@ onMounted(async () => {
 </script>
 
 <template>
-  <main class="h-full overflow-y-auto bg-slate-50">
-      <div class="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:py-10">
-        <!-- 页面标题 -->
-        <div class="mb-6">
-          <h1 class="text-2xl font-bold tracking-tight text-slate-800">
-            统计
-          </h1>
-          <p class="mt-1 text-sm text-slate-500">
-            查看你的足迹概览与出行目的分布
-          </p>
-        </div>
+  <main class="h-full overflow-y-auto bg-muted/40">
+    <div class="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:py-10">
+      <!-- 页面标题 -->
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold tracking-tight text-foreground">统计</h1>
+        <p class="mt-1 text-sm text-muted-foreground">查看你的足迹概览与出行目的分布</p>
+      </div>
 
-        <!-- 时间范围筛选 -->
-        <section
-          class="mb-6 flex flex-wrap items-center gap-3 rounded-xl border border-slate-200 bg-white px-4 py-3 shadow-sm"
+      <!-- 时间范围筛选 -->
+      <section
+        class="mb-6 flex flex-wrap items-center gap-3 rounded-lg border border-border bg-card px-4 py-3 shadow-sm"
+      >
+        <ToggleGroup
+          :model-value="rangeType"
+          type="single"
+          variant="outline"
+          @update:model-value="(v) => v && (rangeType = v as RangeType)"
         >
-          <ToggleGroup
-            :model-value="rangeType"
-            type="single"
-            variant="outline"
-            @update:model-value="(v) => v && (rangeType = v as RangeType)"
+          <ToggleGroupItem value="all">全部</ToggleGroupItem>
+          <ToggleGroupItem value="thisYear">今年</ToggleGroupItem>
+          <ToggleGroupItem value="lastYear">最近一年</ToggleGroupItem>
+          <ToggleGroupItem value="custom">自定义</ToggleGroupItem>
+        </ToggleGroup>
+        <DatePicker v-if="rangeType === 'custom'" v-model="customRange" range class="w-72" />
+      </section>
+
+      <!-- 加载骨架屏 -->
+      <div v-if="visitRecordStore.loading" class="space-y-6">
+        <div class="grid grid-cols-3 gap-3">
+          <Skeleton v-for="i in 3" :key="i" class="h-20 rounded-lg" />
+        </div>
+        <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <Skeleton class="h-80 rounded-lg" />
+          <Skeleton class="h-80 rounded-lg" />
+        </div>
+      </div>
+
+      <!-- 空状态：无任何记录 -->
+      <EmptyState
+        v-else-if="!hasAnyRecords"
+        icon="map"
+        title="还没有到达记录"
+        subtitle="前往地图点亮你的第一座城市吧"
+      >
+        <template #action>
+          <Button as-child>
+            <router-link to="/"> 去地图 </router-link>
+          </Button>
+        </template>
+      </EmptyState>
+
+      <!-- 空状态：筛选无结果 -->
+      <EmptyState
+        v-else-if="!hasFilteredData"
+        icon="calendar"
+        title="所选时间范围内暂无记录"
+        subtitle="尝试切换其他时间范围"
+      />
+
+      <!-- 统计内容 -->
+      <template v-else>
+        <!-- 统计卡片行 -->
+        <section class="mb-6 grid grid-cols-3 gap-3">
+          <div
+            class="flex items-center justify-center rounded-lg border border-border bg-card px-2 py-4 shadow-sm"
           >
-            <ToggleGroupItem value="all">全部</ToggleGroupItem>
-            <ToggleGroupItem value="thisYear">今年</ToggleGroupItem>
-            <ToggleGroupItem value="lastYear">最近一年</ToggleGroupItem>
-            <ToggleGroupItem value="custom">自定义</ToggleGroupItem>
-          </ToggleGroup>
-          <DatePicker
-            v-if="rangeType === 'custom'"
-            v-model="customRange"
-            range
-            class="w-72"
-          />
+            <StatCard label="点亮国家" :value="filteredStats.litCountryCount" />
+          </div>
+          <div
+            class="flex items-center justify-center rounded-lg border border-border bg-card px-2 py-4 shadow-sm"
+          >
+            <StatCard label="点亮城市" :value="filteredStats.litCityCount" />
+          </div>
+          <div
+            class="flex items-center justify-center rounded-lg border border-border bg-card px-2 py-4 shadow-sm"
+          >
+            <StatCard label="总出行次" :value="filteredStats.totalTripCount" />
+          </div>
         </section>
 
-        <!-- 加载骨架屏 -->
-        <div v-if="visitRecordStore.loading" class="space-y-6">
-          <div class="grid grid-cols-3 gap-3">
-            <Skeleton
-              v-for="i in 3"
-              :key="i"
-              class="h-20 rounded-lg"
-            />
+        <!-- 饼图 + 地图缩略 -->
+        <section class="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
+          <!-- 目的分布饼图 -->
+          <div class="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+            <div class="border-b border-border px-4 py-3">
+              <h2 class="text-sm font-semibold text-foreground">出行目的分布</h2>
+            </div>
+            <div class="h-80 p-2">
+              <PurposePieChart :records="filteredRecords" />
+            </div>
           </div>
-          <div class="grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <Skeleton class="h-80 rounded-xl" />
-            <Skeleton class="h-80 rounded-xl" />
+
+          <!-- 点亮地图缩略图 -->
+          <div class="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+            <div class="border-b border-border px-4 py-3">
+              <h2 class="text-sm font-semibold text-foreground">点亮地图</h2>
+            </div>
+            <div class="h-80">
+              <BaseMap
+                level="country"
+                readonly
+                :lit-cities="filteredLitCities"
+                :city-visit-count="filteredCityVisitCount"
+              />
+            </div>
           </div>
-        </div>
+        </section>
 
-        <!-- 空状态：无任何记录 -->
-        <EmptyState
-          v-else-if="!hasAnyRecords"
-          icon="map"
-          title="还没有到达记录"
-          subtitle="前往地图点亮你的第一座城市吧"
-        >
-          <template #action>
-            <Button as-child>
-              <router-link to="/">
-                去地图
-              </router-link>
-            </Button>
-          </template>
-        </EmptyState>
-
-        <!-- 空状态：筛选无结果 -->
-        <EmptyState
-          v-else-if="!hasFilteredData"
-          icon="calendar"
-          title="所选时间范围内暂无记录"
-          subtitle="尝试切换其他时间范围"
-        />
-
-        <!-- 统计内容 -->
-        <template v-else>
-          <!-- 统计卡片行 -->
-          <section class="mb-6 grid grid-cols-3 gap-3">
+        <!-- 行程列表 -->
+        <section class="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+          <div class="border-b border-border px-4 py-3">
+            <h2 class="text-sm font-semibold text-foreground">我的行程</h2>
+          </div>
+          <div class="px-4 py-4">
             <div
-              class="flex items-center justify-center rounded-xl border border-slate-200 bg-white px-2 py-4 shadow-sm"
+              v-if="filteredTrips.length === 0"
+              class="py-8 text-center text-xs text-muted-foreground"
             >
-              <StatCard
-                label="点亮国家"
-                :value="filteredStats.litCountryCount"
+              该时间范围内暂无行程
+            </div>
+            <div v-else class="space-y-2.5">
+              <TripCard
+                v-for="trip in filteredTrips"
+                :key="trip.id"
+                :trip="trip"
+                :records="recordsForTrip(trip.id)"
+                readonly
               />
             </div>
-            <div
-              class="flex items-center justify-center rounded-xl border border-slate-200 bg-white px-2 py-4 shadow-sm"
-            >
-              <StatCard
-                label="点亮城市"
-                :value="filteredStats.litCityCount"
-              />
-            </div>
-            <div
-              class="flex items-center justify-center rounded-xl border border-slate-200 bg-white px-2 py-4 shadow-sm"
-            >
-              <StatCard
-                label="总出行次"
-                :value="filteredStats.totalTripCount"
-              />
-            </div>
-          </section>
-
-          <!-- 饼图 + 地图缩略 -->
-          <section class="mb-6 grid grid-cols-1 gap-4 lg:grid-cols-2">
-            <!-- 目的分布饼图 -->
-            <div
-              class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
-            >
-              <div class="border-b border-slate-100 px-4 py-3">
-                <h2 class="text-sm font-semibold text-slate-700">
-                  出行目的分布
-                </h2>
-              </div>
-              <div class="h-80 p-2">
-                <PurposePieChart :records="filteredRecords" />
-              </div>
-            </div>
-
-            <!-- 点亮地图缩略图 -->
-            <div
-              class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
-            >
-              <div class="border-b border-slate-100 px-4 py-3">
-                <h2 class="text-sm font-semibold text-slate-700">
-                  点亮地图
-                </h2>
-              </div>
-              <div class="h-80">
-                <BaseMap
-                  level="country"
-                  readonly
-                  :lit-cities="filteredLitCities"
-                  :city-visit-count="filteredCityVisitCount"
-                />
-              </div>
-            </div>
-          </section>
-
-          <!-- 行程列表 -->
-          <section
-            class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
-          >
-            <div class="border-b border-slate-100 px-4 py-3">
-              <h2 class="text-sm font-semibold text-slate-700">我的行程</h2>
-            </div>
-            <div class="px-4 py-4">
-              <div
-                v-if="filteredTrips.length === 0"
-                class="py-8 text-center text-xs text-slate-400"
-              >
-                该时间范围内暂无行程
-              </div>
-              <div v-else class="space-y-2.5">
-                <TripCard
-                  v-for="trip in filteredTrips"
-                  :key="trip.id"
-                  :trip="trip"
-                  :records="recordsForTrip(trip.id)"
-                  readonly
-                />
-              </div>
-            </div>
-          </section>
-        </template>
-      </div>
-    </main>
+          </div>
+        </section>
+      </template>
+    </div>
+  </main>
 </template>

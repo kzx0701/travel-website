@@ -7,12 +7,14 @@ import { toast } from 'vue-sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -29,9 +31,7 @@ const schema = toTypedSchema(
         .string({ required_error: '请输入密码' })
         .min(1, '请输入密码')
         .min(6, '密码至少 6 位'),
-      confirmPassword: z
-        .string({ required_error: '请再次输入密码' })
-        .min(1, '请再次输入密码'),
+      confirmPassword: z.string({ required_error: '请再次输入密码' }).min(1, '请再次输入密码'),
     })
     .refine((data) => data.password === data.confirmPassword, {
       path: ['confirmPassword'],
@@ -60,116 +60,57 @@ const onSubmit = handleSubmit(async (values) => {
 </script>
 
 <template>
-  <div class="auth-page">
-    <div class="auth-card">
-      <h1 class="auth-title">注册</h1>
-      <p class="auth-subtitle">创建账号，开启你的旅行地图</p>
-      <form class="auth-form" @submit="onSubmit">
-        <FormField v-slot="{ componentField }" name="email">
-          <FormItem>
-            <FormLabel>邮箱</FormLabel>
-            <FormControl>
-              <Input
-                type="email"
-                placeholder="请输入邮箱"
-                v-bind="componentField"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        </FormField>
-        <FormField v-slot="{ componentField }" name="password">
-          <FormItem>
-            <FormLabel>密码</FormLabel>
-            <FormControl>
-              <Input
-                type="password"
-                placeholder="请输入密码"
-                v-bind="componentField"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        </FormField>
-        <FormField v-slot="{ componentField }" name="confirmPassword">
-          <FormItem>
-            <FormLabel>确认密码</FormLabel>
-            <FormControl>
-              <Input
-                type="password"
-                placeholder="请再次输入密码"
-                v-bind="componentField"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        </FormField>
-        <Button
-          type="submit"
-          class="w-full"
-          :disabled="authStore.loading"
-        >
-          {{ authStore.loading ? '注册中…' : '注册' }}
-        </Button>
-      </form>
-      <p class="auth-footer">
-        已有账号？<router-link to="/login">去登录</router-link>
-      </p>
-    </div>
-  </div>
+  <main class="flex min-h-screen items-center justify-center bg-background p-6">
+    <Card class="w-full max-w-sm">
+      <CardHeader>
+        <CardTitle>注册</CardTitle>
+        <CardDescription>创建账号，开启你的旅行地图</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form class="space-y-4" @submit="onSubmit">
+          <FormField v-slot="{ componentField }" name="email">
+            <FormItem>
+              <FormLabel>邮箱</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="请输入邮箱" v-bind="componentField" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </FormField>
+          <FormField v-slot="{ componentField }" name="password">
+            <FormItem>
+              <FormLabel>密码</FormLabel>
+              <FormControl>
+                <Input type="password" placeholder="请输入密码" v-bind="componentField" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </FormField>
+          <FormField v-slot="{ componentField }" name="confirmPassword">
+            <FormItem>
+              <FormLabel>确认密码</FormLabel>
+              <FormControl>
+                <Input type="password" placeholder="请再次输入密码" v-bind="componentField" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </FormField>
+          <Button type="submit" class="w-full" :disabled="authStore.loading">
+            {{ authStore.loading ? '注册中…' : '注册' }}
+          </Button>
+        </form>
+      </CardContent>
+      <CardFooter class="justify-center">
+        <p class="text-sm text-muted-foreground">
+          已有账号？
+          <router-link
+            class="font-medium text-primary underline-offset-4 hover:underline"
+            to="/login"
+          >
+            去登录
+          </router-link>
+        </p>
+      </CardFooter>
+    </Card>
+  </main>
 </template>
-
-<style scoped>
-.auth-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #ffffff;
-  padding: 1.5rem;
-}
-
-.auth-card {
-  width: 100%;
-  max-width: 400px;
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-  padding: 2.5rem 2rem;
-}
-
-.auth-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 0 0 0.5rem;
-}
-
-.auth-subtitle {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin: 0 0 1.5rem;
-}
-
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.auth-footer {
-  text-align: center;
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin: 0.5rem 0 0;
-}
-
-.auth-footer a {
-  color: hsl(var(--primary));
-  text-decoration: none;
-}
-
-.auth-footer a:hover {
-  text-decoration: underline;
-}
-</style>

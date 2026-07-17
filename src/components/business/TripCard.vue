@@ -78,8 +78,9 @@ function handleEdit(): void {
 // ---- 删除行程：三选项确认（声明式 AlertDialog） ----
 const deleteVisible = ref(false)
 
-const deleteDescription = computed(() =>
-  `确定要删除行程「${props.trip.name}」吗？\n关联的 ${recordCount.value} 条到达记录可保留（解绑行程）或同步删除。`,
+const deleteDescription = computed(
+  () =>
+    `确定要删除行程「${props.trip.name}」吗？\n关联的 ${recordCount.value} 条到达记录可保留（解绑行程）或同步删除。`,
 )
 
 function handleDelete(): void {
@@ -98,16 +99,16 @@ function handleSyncDelete(): void {
 
 <template>
   <div
-    class="trip-card rounded-lg border border-slate-100 bg-white transition-colors hover:border-slate-200"
+    class="trip-card rounded-lg border border-border bg-card transition-colors hover:border-border"
   >
     <!-- 卡片头部 -->
     <div class="px-4 py-3">
       <div class="flex items-start justify-between gap-2">
         <div class="min-w-0 flex-1">
-          <h3 class="truncate text-sm font-semibold text-slate-800">
+          <h3 class="truncate text-sm font-semibold text-foreground">
             {{ trip.name }}
           </h3>
-          <p class="mt-0.5 text-xs text-slate-400">
+          <p class="mt-0.5 text-xs text-muted-foreground">
             {{ dateRangeText }}
           </p>
         </div>
@@ -167,33 +168,37 @@ function handleSyncDelete(): void {
     </div>
 
     <!-- 展开区域：关联记录列表 -->
-    <div
-      v-if="expanded"
-      class="border-t border-slate-100 bg-slate-50/50 px-4 py-2.5"
-    >
-      <div v-if="sortedRecords.length === 0" class="py-3 text-center text-xs text-slate-400">
+    <div v-if="expanded" class="border-t border-border bg-muted/50 px-4 py-2.5">
+      <div v-if="sortedRecords.length === 0" class="py-3 text-center text-xs text-muted-foreground">
         暂无关联记录
       </div>
       <div v-else class="space-y-1.5">
         <div
           v-for="record in sortedRecords"
           :key="record.id"
-          class="flex items-center justify-between gap-2 rounded-md bg-white px-2.5 py-1.5"
+          class="flex items-center justify-between gap-2 rounded-md bg-card px-2.5 py-1.5"
         >
           <div class="min-w-0 flex-1">
             <div class="flex items-baseline gap-1.5">
-              <span class="truncate text-xs font-medium text-slate-700">
+              <span class="truncate text-xs font-medium text-foreground">
                 {{ record.cityName }}
               </span>
-              <span class="shrink-0 text-[11px] text-slate-400">
-                {{ record.startDate }}<template v-if="record.endDate"> — {{ record.endDate }}</template>
+              <span class="shrink-0 text-[11px] text-muted-foreground">
+                {{ record.startDate
+                }}<template v-if="record.endDate"> — {{ record.endDate }}</template>
               </span>
             </div>
-            <p v-if="record.note" class="mt-0.5 truncate text-[11px] text-slate-400" :title="record.note">
+            <p
+              v-if="record.note"
+              class="mt-0.5 truncate text-[11px] text-muted-foreground"
+              :title="record.note"
+            >
               {{ record.note }}
             </p>
           </div>
-          <span class="shrink-0 rounded-full bg-secondary px-1.5 py-0.5 text-[11px] text-secondary-foreground">
+          <span
+            class="shrink-0 rounded-full bg-secondary px-1.5 py-0.5 text-[11px] text-secondary-foreground"
+          >
             {{ record.purpose }}
           </span>
         </div>
@@ -211,9 +216,7 @@ function handleSyncDelete(): void {
         </AlertDialogHeader>
         <AlertDialogFooter class="sm:flex-col-reverse sm:gap-2">
           <AlertDialogCancel>取消</AlertDialogCancel>
-          <AlertDialogAction @click="handleKeepRecords">
-            保留记录
-          </AlertDialogAction>
+          <AlertDialogAction @click="handleKeepRecords"> 保留记录 </AlertDialogAction>
           <AlertDialogAction
             class="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             @click="handleSyncDelete"

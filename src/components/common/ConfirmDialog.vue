@@ -79,7 +79,9 @@ function handleUpdateOpen(val: boolean): void {
           {{ cancelText }}
         </AlertDialogCancel>
         <AlertDialogAction
-          :class="danger ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''"
+          :class="
+            danger ? 'bg-destructive text-destructive-foreground hover:bg-destructive/90' : ''
+          "
           @click="handleConfirm"
         >
           {{ confirmText }}

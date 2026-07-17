@@ -32,9 +32,7 @@ const loading = ref(true)
 const errorMsg = ref('')
 
 const avatarUrl = computed(() =>
-  profile.value?.avatarSeed
-    ? getAvatarUrl(profile.value.avatarSeed, 128)
-    : '',
+  profile.value?.avatarSeed ? getAvatarUrl(profile.value.avatarSeed, 128) : '',
 )
 
 // ---- 客户端派生：统计 / 点亮城市 / 城市到达次数 ----
@@ -75,14 +73,10 @@ const cityVisitCount = computed<Record<string, number>>(() => {
   return map
 })
 
-const hasRecords = computed(
-  () => (profile.value?.visitRecords.length ?? 0) > 0,
-)
+const hasRecords = computed(() => (profile.value?.visitRecords.length ?? 0) > 0)
 
 function recordsForTrip(tripId: string): VisitRecord[] {
-  return (profile.value?.visitRecords ?? []).filter(
-    (r) => r.tripId === tripId,
-  )
+  return (profile.value?.visitRecords ?? []).filter((r) => r.tripId === tripId)
 }
 
 onMounted(async () => {
@@ -98,24 +92,17 @@ onMounted(async () => {
 </script>
 
 <template>
-  <div class="flex h-screen flex-col overflow-hidden bg-slate-50">
+  <div class="flex h-screen flex-col overflow-hidden bg-muted/40">
     <!-- 极简头部（无登录态，不使用 AppNavbar） -->
     <header
-      class="flex h-14 shrink-0 items-center justify-between border-b border-slate-200 bg-white px-6"
+      class="flex h-14 shrink-0 items-center justify-between border-b border-border bg-card px-6"
     >
-      <router-link
-        to="/login"
-        class="flex items-center gap-2"
-      >
+      <router-link to="/login" class="flex items-center gap-2">
         <MapPin class="h-6 w-6 text-warm" />
-        <span class="text-base font-bold tracking-tight text-slate-800">
-          足记
-        </span>
+        <span class="text-base font-bold tracking-tight text-foreground"> 足记 </span>
       </router-link>
       <Button as-child size="sm">
-        <router-link to="/register">
-          创建我的足迹
-        </router-link>
+        <router-link to="/register"> 创建我的足迹 </router-link>
       </Button>
     </header>
 
@@ -124,9 +111,9 @@ onMounted(async () => {
       <div class="mx-auto w-full max-w-5xl px-4 py-8 sm:px-6 lg:py-10">
         <!-- 加载中 -->
         <div v-if="loading" class="space-y-6">
-          <Skeleton class="h-32 rounded-xl" />
-          <Skeleton class="h-80 rounded-xl" />
-          <Skeleton class="h-40 rounded-xl" />
+          <Skeleton class="h-32 rounded-lg" />
+          <Skeleton class="h-80 rounded-lg" />
+          <Skeleton class="h-40 rounded-lg" />
         </div>
 
         <!-- 错误状态 -->
@@ -138,9 +125,7 @@ onMounted(async () => {
         >
           <template #action>
             <Button as-child>
-              <router-link to="/login">
-                返回首页
-              </router-link>
+              <router-link to="/login"> 返回首页 </router-link>
             </Button>
           </template>
         </EmptyState>
@@ -148,46 +133,33 @@ onMounted(async () => {
         <!-- 公开主页内容 -->
         <template v-else-if="profile">
           <!-- 用户卡片 -->
-          <section
-            class="mb-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
-          >
-            <div
-              class="flex flex-col items-center gap-4 px-6 py-6 sm:flex-row sm:items-center"
-            >
+          <section class="mb-6 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+            <div class="flex flex-col items-center gap-4 px-6 py-6 sm:flex-row sm:items-center">
               <img
                 v-if="avatarUrl"
                 :src="avatarUrl"
                 alt="头像"
-                class="h-20 w-20 rounded-full bg-slate-100 ring-2 ring-slate-100"
+                class="h-20 w-20 rounded-full bg-muted ring-2 ring-border"
               />
               <div
                 v-else
-                class="flex h-20 w-20 items-center justify-center rounded-full bg-slate-100 text-2xl font-bold text-slate-500 ring-2 ring-slate-100"
+                class="flex h-20 w-20 items-center justify-center rounded-full bg-muted text-2xl font-bold text-muted-foreground ring-2 ring-border"
               >
                 {{ profile.displayName.charAt(0).toUpperCase() }}
               </div>
 
               <div class="min-w-0 flex-1 text-center sm:text-left">
-                <h2 class="truncate font-serif text-xl text-slate-800">
+                <h2 class="truncate font-serif text-xl text-foreground">
                   {{ profile.displayName }}
                 </h2>
-                <p class="mt-1 text-xs text-slate-400">的足记</p>
+                <p class="mt-1 text-xs text-muted-foreground">的足记</p>
               </div>
 
               <!-- 统计概览 -->
               <div class="grid w-full grid-cols-3 gap-2 sm:w-auto sm:gap-3">
-                <StatCard
-                  label="点亮国家"
-                  :value="stats.litCountryCount"
-                />
-                <StatCard
-                  label="点亮城市"
-                  :value="stats.litCityCount"
-                />
-                <StatCard
-                  label="出行次数"
-                  :value="stats.totalTripCount"
-                />
+                <StatCard label="点亮国家" :value="stats.litCountryCount" />
+                <StatCard label="点亮城市" :value="stats.litCityCount" />
+                <StatCard label="出行次数" :value="stats.totalTripCount" />
               </div>
             </div>
           </section>
@@ -202,13 +174,9 @@ onMounted(async () => {
 
           <template v-else>
             <!-- 点亮地图只读 -->
-            <section
-              class="mb-6 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
-            >
-              <div class="border-b border-slate-100 px-4 py-3">
-                <h2 class="text-sm font-semibold text-slate-700">
-                  点亮地图
-                </h2>
+            <section class="mb-6 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+              <div class="border-b border-border px-4 py-3">
+                <h2 class="text-sm font-semibold text-foreground">点亮地图</h2>
               </div>
               <div class="relative h-96">
                 <BaseMap
@@ -221,18 +189,14 @@ onMounted(async () => {
             </section>
 
             <!-- 行程列表 -->
-            <section
-              class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm"
-            >
-              <div class="border-b border-slate-100 px-4 py-3">
-                <h2 class="text-sm font-semibold text-slate-700">
-                  行程列表
-                </h2>
+            <section class="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+              <div class="border-b border-border px-4 py-3">
+                <h2 class="text-sm font-semibold text-foreground">行程列表</h2>
               </div>
               <div class="px-4 py-4">
                 <div
                   v-if="profile.trips.length === 0"
-                  class="py-8 text-center text-xs text-slate-400"
+                  class="py-8 text-center text-xs text-muted-foreground"
                 >
                   暂无行程
                 </div>

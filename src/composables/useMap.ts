@@ -1,12 +1,6 @@
 import { computed, ref } from 'vue'
 import type { City, MapLevel, Province } from '@/types'
-import {
-  cities,
-  cityMap,
-  getCityByCode,
-  getProvinceByCode,
-  provinceMap,
-} from '@/data/cities'
+import { cities, cityMap, getCityByCode, getProvinceByCode, provinceMap } from '@/data/cities'
 
 /**
  * useMap - 地图状态管理 composable

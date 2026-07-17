@@ -4,11 +4,7 @@ import type { HTMLAttributes } from 'vue'
 import { Check, ChevronsUpDown } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import {
   Command,
   CommandEmpty,
@@ -65,9 +61,7 @@ const open = ref(false)
 const selectedSet = computed(() => new Set(props.modelValue))
 
 const selectedLabels = computed(() =>
-  props.modelValue
-    .map((v) => props.options.find((o) => o.value === v)?.label ?? v)
-    .slice(0, 2),
+  props.modelValue.map((v) => props.options.find((o) => o.value === v)?.label ?? v).slice(0, 2),
 )
 
 const overflowCount = computed(() =>
@@ -93,19 +87,18 @@ function toggle(value: string): void {
         variant="outline"
         role="combobox"
         :aria-expanded="open"
-        :class="cn(
-          'justify-between font-normal',
-          modelValue.length === 0 && 'text-muted-foreground',
-          props.class,
-        )"
+        :class="
+          cn(
+            'justify-between font-normal',
+            modelValue.length === 0 && 'text-muted-foreground',
+            props.class,
+          )
+        "
       >
         <span v-if="modelValue.length === 0" class="truncate">
           {{ placeholder }}
         </span>
-        <span
-          v-else
-          class="flex flex-1 items-center gap-1 overflow-hidden"
-        >
+        <span v-else class="flex flex-1 items-center gap-1 overflow-hidden">
           <Badge
             v-for="label in selectedLabels"
             :key="label"
@@ -136,15 +129,10 @@ function toggle(value: string): void {
               <div
                 class="flex size-4 items-center justify-center rounded-sm border border-primary"
                 :class="
-                  selectedSet.has(opt.value)
-                    ? 'bg-primary text-primary-foreground'
-                    : 'opacity-100'
+                  selectedSet.has(opt.value) ? 'bg-primary text-primary-foreground' : 'opacity-100'
                 "
               >
-                <Check
-                  v-if="selectedSet.has(opt.value)"
-                  class="size-3"
-                />
+                <Check v-if="selectedSet.has(opt.value)" class="size-3" />
               </div>
               <span class="truncate">{{ opt.label }}</span>
             </CommandItem>

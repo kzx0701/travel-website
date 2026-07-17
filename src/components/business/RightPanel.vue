@@ -31,9 +31,7 @@ const editingRecord = ref<VisitRecord | null>(null)
 
 /** 当前选中城市是否为居住地（居住地不可点亮） */
 const isResidenceCity = computed(
-  () =>
-    !!mapStore.selectedCity &&
-    mapStore.selectedCity.code === residenceStore.residenceCityCode,
+  () => !!mapStore.selectedCity && mapStore.selectedCity.code === residenceStore.residenceCityCode,
 )
 
 /** 当前选中城市的到达记录列表 */
@@ -44,8 +42,7 @@ const selectedCityRecords = computed(() => {
 })
 
 const selectedCityCount = computed(
-  () =>
-    visitRecordStore.cityVisitCount[mapStore.selectedCity?.code ?? ''] ?? 0,
+  () => visitRecordStore.cityVisitCount[mapStore.selectedCity?.code ?? ''] ?? 0,
 )
 
 /** 是否为该城市的第一条记录（决定按钮文案"点亮城市" vs "添加记录"） */
@@ -120,13 +117,10 @@ function handleFormCancel(): void {
 async function handleRecordDelete(record: VisitRecord): Promise<void> {
   // 在删除前预判是否会变成该城市最后一条记录
   const cityCode = mapStore.selectedCity?.code ?? ''
-  const wasLast =
-    cityCode !== '' && (visitRecordStore.cityVisitCount[cityCode] ?? 0) <= 1
+  const wasLast = cityCode !== '' && (visitRecordStore.cityVisitCount[cityCode] ?? 0) <= 1
   try {
     await visitRecordStore.remove(record.id)
-    toast.success(
-      wasLast ? '已删除记录，该城市已无到达记录，已取消点亮' : '已删除记录',
-    )
+    toast.success(wasLast ? '已删除记录，该城市已无到达记录，已取消点亮' : '已删除记录')
   } catch (e) {
     toast.error('删除失败')
     console.error(e)
@@ -141,16 +135,13 @@ function handleRecordEdit(record: VisitRecord): void {
 <template>
   <div class="flex h-full flex-col">
     <!-- 顶部固定：城市信息头（detail / form 态均固定显示） -->
-    <header
-      v-if="mapStore.selectedCity"
-      class="shrink-0 border-b border-slate-100 px-5 py-4"
-    >
+    <header v-if="mapStore.selectedCity" class="shrink-0 border-b border-border px-5 py-4">
       <div class="flex items-start justify-between">
         <div>
-          <h2 class="text-xl font-bold tracking-tight text-slate-800">
+          <h2 class="text-xl font-bold tracking-tight text-foreground">
             {{ mapStore.selectedCity.name }}
           </h2>
-          <p class="mt-0.5 text-xs text-slate-400">
+          <p class="mt-0.5 text-xs text-muted-foreground">
             {{ mapStore.selectedCity.provinceName }}
           </p>
         </div>
@@ -181,12 +172,8 @@ function handleRecordEdit(record: VisitRecord): void {
     <div class="relative flex-1 overflow-hidden">
       <Transition name="content-slide" mode="out-in">
         <!-- 默认态（未选择城市） -->
-        <div
-          v-if="!mapStore.selectedCity"
-          key="default"
-          class="flex h-full flex-col"
-        >
-          <div class="border-b border-slate-100 px-4 py-2.5">
+        <div v-if="!mapStore.selectedCity" key="default" class="flex h-full flex-col">
+          <div class="border-b border-border px-4 py-2.5">
             <MapBreadcrumb
               :level="mapStore.currentLevel"
               :province-name="mapStore.breadcrumbNames.provinceName"
@@ -194,18 +181,12 @@ function handleRecordEdit(record: VisitRecord): void {
               @navigate="handleNavigate"
             />
           </div>
-          <div
-            class="flex flex-1 flex-col items-center justify-center px-8 text-center"
-          >
-            <div
-              class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted"
-            >
+          <div class="flex flex-1 flex-col items-center justify-center px-8 text-center">
+            <div class="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
               <MapPin class="h-7 w-7 text-muted-foreground/60" />
             </div>
-            <p class="text-sm font-medium text-slate-600">
-              点击地图上的城市查看详情
-            </p>
-            <p class="mt-1 text-xs text-slate-400">或使用左侧搜索快速定位</p>
+            <p class="text-sm font-medium text-muted-foreground">点击地图上的城市查看详情</p>
+            <p class="mt-1 text-xs text-muted-foreground">或使用左侧搜索快速定位</p>
           </div>
 
           <!-- 常驻添加记录按钮 -->
@@ -214,9 +195,7 @@ function handleRecordEdit(record: VisitRecord): void {
               <Plus class="h-4 w-4" />
               添加到达记录
             </Button>
-            <p class="mt-1.5 text-center text-xs text-slate-400">
-              请先选择城市
-            </p>
+            <p class="mt-1.5 text-center text-xs text-muted-foreground">请先选择城市</p>
           </div>
         </div>
 
@@ -266,13 +245,8 @@ function handleRecordEdit(record: VisitRecord): void {
           key="fallback"
           class="flex h-full flex-col items-center justify-center px-8 text-center"
         >
-          <p class="text-sm text-slate-400">请先选择城市</p>
-          <Button
-            variant="outline"
-            size="sm"
-            class="mt-3"
-            @click="handleBackToDetail"
-          >
+          <p class="text-sm text-muted-foreground">请先选择城市</p>
+          <Button variant="outline" size="sm" class="mt-3" @click="handleBackToDetail">
             返回
           </Button>
         </div>

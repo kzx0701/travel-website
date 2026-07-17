@@ -29,28 +29,26 @@ const dateText = computed(() =>
     />
 
     <div
-      class="rounded-lg border border-slate-100 bg-white px-3.5 py-2.5 shadow-sm transition-colors hover:border-slate-200"
+      class="rounded-lg border border-border bg-card px-3.5 py-2.5 shadow-sm transition-colors hover:border-border"
     >
       <!-- 头部：城市名 + 日期 -->
       <div class="flex items-center justify-between gap-2">
-        <span class="text-sm font-semibold text-slate-800">
+        <span class="text-sm font-semibold text-foreground">
           {{ record.cityName }}
         </span>
-        <span class="shrink-0 text-xs text-slate-400 tabular-nums">
+        <span class="shrink-0 text-xs text-muted-foreground tabular-nums">
           {{ dateText }}
         </span>
       </div>
 
       <!-- 目的标签 + 备注 -->
       <div class="mt-1.5 flex flex-wrap items-center gap-2">
-        <span
-          class="inline-flex items-center rounded-full bg-warm/5 px-2 py-0.5 text-xs text-warm"
-        >
+        <span class="inline-flex items-center rounded-full bg-warm/5 px-2 py-0.5 text-xs text-warm">
           {{ record.purpose }}
         </span>
         <p
           v-if="record.note"
-          class="min-w-0 flex-1 truncate text-xs text-slate-500"
+          class="min-w-0 flex-1 truncate text-xs text-muted-foreground"
           :title="record.note"
         >
           {{ record.note }}

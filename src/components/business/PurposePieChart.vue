@@ -6,7 +6,7 @@ import type { VisitRecord } from '@/types'
 /**
  * PurposePieChart - 出行目的分布饼图
  *
- * 按 purpose 分组统计传入的到达记录，渲染为环形饼图，暖橙色系配色。
+ * 按 purpose 分组统计传入的到达记录，渲染为环形饼图。
  * 父组件负责保证仅在存在数据时渲染本组件。
  *
  * Props:
@@ -20,17 +20,21 @@ const containerRef = ref<HTMLDivElement | null>(null)
 const chart = shallowRef<echarts.ECharts | null>(null)
 let resizeObserver: ResizeObserver | null = null
 
-// 暖橙色系配色（由浅到深，循环使用）
-const WARM_PALETTE = [
-  '#FF6B35',
-  '#FFB380',
-  '#E05A20',
-  '#FF8C5A',
-  '#FFD4B8',
-  '#C44820',
-  '#FF9E70',
-  '#D96A2E',
-]
+function hslToken(name: string): string {
+  if (typeof document === 'undefined') return 'transparent'
+  const value = getComputedStyle(document.documentElement).getPropertyValue(name).trim()
+  return value ? `hsl(${value})` : 'transparent'
+}
+
+function chartPalette(): string[] {
+  return [
+    hslToken('--chart-5'),
+    hslToken('--chart-4'),
+    hslToken('--chart-3'),
+    hslToken('--chart-2'),
+    hslToken('--chart-1'),
+  ]
+}
 
 interface PieDataItem {
   name: string
@@ -62,9 +66,9 @@ function buildOption(): echarts.EChartsCoreOption {
       icon: 'circle',
       itemWidth: 8,
       itemHeight: 8,
-      textStyle: { color: '#64748B', fontSize: 12 },
+      textStyle: { color: hslToken('--muted-foreground'), fontSize: 12 },
     },
-    color: WARM_PALETTE,
+    color: chartPalette(),
     series: [
       {
         name: '出行目的',
@@ -73,7 +77,7 @@ function buildOption(): echarts.EChartsCoreOption {
         center: ['38%', '50%'],
         avoidLabelOverlap: true,
         itemStyle: {
-          borderColor: '#FFFFFF',
+          borderColor: hslToken('--card'),
           borderWidth: 2,
         },
         label: { show: false },
@@ -83,7 +87,7 @@ function buildOption(): echarts.EChartsCoreOption {
             show: true,
             fontSize: 13,
             fontWeight: 'bold',
-            color: '#1F2937',
+            color: hslToken('--foreground'),
             formatter: '{b}\n{d}%',
           },
         },

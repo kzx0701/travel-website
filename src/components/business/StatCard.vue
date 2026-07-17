@@ -19,16 +19,12 @@ withDefaults(
 
 <template>
   <div class="flex flex-1 flex-col items-center justify-center text-center">
-    <div class="text-[10px] font-medium uppercase tracking-wider text-zinc-400">
+    <div class="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
       {{ label }}
     </div>
     <div class="mt-0.5 flex items-center gap-1">
-      <span
-        v-if="icon"
-        class="text-xs leading-none text-primary"
-        v-html="icon"
-      />
-      <span class="text-base font-semibold tracking-tight text-zinc-800 tabular-nums">
+      <span v-if="icon" class="text-xs leading-none text-primary" v-html="icon" />
+      <span class="text-base font-semibold tracking-tight text-foreground tabular-nums">
         {{ value }}
       </span>
     </div>

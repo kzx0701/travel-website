@@ -7,12 +7,14 @@ import { toast } from 'vue-sonner'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form'
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
+import { FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form'
 import { useAuthStore } from '@/stores/auth'
 
 const router = useRouter()
@@ -53,103 +55,48 @@ const onSubmit = handleSubmit(async (values) => {
 </script>
 
 <template>
-  <div class="auth-page">
-    <div class="auth-card">
-      <h1 class="auth-title">登录</h1>
-      <p class="auth-subtitle">登录后开始记录你的旅行足迹</p>
-      <form class="auth-form" @submit="onSubmit">
-        <FormField v-slot="{ componentField }" name="email">
-          <FormItem>
-            <FormLabel>邮箱</FormLabel>
-            <FormControl>
-              <Input
-                type="email"
-                placeholder="请输入邮箱"
-                v-bind="componentField"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        </FormField>
-        <FormField v-slot="{ componentField }" name="password">
-          <FormItem>
-            <FormLabel>密码</FormLabel>
-            <FormControl>
-              <Input
-                type="password"
-                placeholder="请输入密码"
-                v-bind="componentField"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        </FormField>
-        <Button
-          type="submit"
-          class="w-full"
-          :disabled="authStore.loading"
-        >
-          {{ authStore.loading ? '登录中…' : '登录' }}
-        </Button>
-      </form>
-      <p class="auth-footer">
-        没有账号？<router-link to="/register">去注册</router-link>
-      </p>
-    </div>
-  </div>
+  <main class="flex min-h-screen items-center justify-center bg-background p-6">
+    <Card class="w-full max-w-sm">
+      <CardHeader>
+        <CardTitle>登录</CardTitle>
+        <CardDescription>登录后开始记录你的旅行足迹</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form class="space-y-4" @submit="onSubmit">
+          <FormField v-slot="{ componentField }" name="email">
+            <FormItem>
+              <FormLabel>邮箱</FormLabel>
+              <FormControl>
+                <Input type="email" placeholder="请输入邮箱" v-bind="componentField" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </FormField>
+          <FormField v-slot="{ componentField }" name="password">
+            <FormItem>
+              <FormLabel>密码</FormLabel>
+              <FormControl>
+                <Input type="password" placeholder="请输入密码" v-bind="componentField" />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </FormField>
+          <Button type="submit" class="w-full" :disabled="authStore.loading">
+            {{ authStore.loading ? '登录中…' : '登录' }}
+          </Button>
+        </form>
+      </CardContent>
+      <CardFooter class="justify-center">
+        <p class="text-sm text-muted-foreground">
+          没有账号？
+          <router-link
+            class="font-medium text-primary underline-offset-4 hover:underline"
+            to="/register"
+          >
+            去注册
+          </router-link>
+        </p>
+      </CardFooter>
+    </Card>
+  </main>
 </template>
-
-<style scoped>
-.auth-page {
-  min-height: 100vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background-color: #ffffff;
-  padding: 1.5rem;
-}
-
-.auth-card {
-  width: 100%;
-  max-width: 400px;
-  background: #ffffff;
-  border-radius: 16px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
-  padding: 2.5rem 2rem;
-}
-
-.auth-title {
-  font-size: 1.5rem;
-  font-weight: 600;
-  color: #1f2937;
-  margin: 0 0 0.5rem;
-}
-
-.auth-subtitle {
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin: 0 0 1.5rem;
-}
-
-.auth-form {
-  display: flex;
-  flex-direction: column;
-  gap: 1rem;
-}
-
-.auth-footer {
-  text-align: center;
-  font-size: 0.875rem;
-  color: #6b7280;
-  margin: 0.5rem 0 0;
-}
-
-.auth-footer a {
-  color: hsl(var(--primary));
-  text-decoration: none;
-}
-
-.auth-footer a:hover {
-  text-decoration: underline;
-}
-</style>

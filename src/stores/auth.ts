@@ -20,10 +20,7 @@ export const useAuthStore = defineStore('auth', () => {
   const isAuthenticated = computed(() => user.value !== null)
 
   /** 将 supabase auth user + profile 行映射为应用层 User */
-  function mapUser(
-    authUser: { id: string; email?: string },
-    profile: ProfileRow | null,
-  ): User {
+  function mapUser(authUser: { id: string; email?: string }, profile: ProfileRow | null): User {
     return {
       id: authUser.id,
       email: authUser.email ?? '',
@@ -104,8 +101,10 @@ export const useAuthStore = defineStore('auth', () => {
     loading.value = true
     error.value = null
     try {
-      const { data, error: signInError } =
-        await supabase.auth.signInWithPassword({ email, password })
+      const { data, error: signInError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      })
       if (signInError) throw signInError
 
       if (data.user) {

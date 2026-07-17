@@ -2,11 +2,7 @@
 import { ref } from 'vue'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
-import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-} from '@/components/ui/sheet'
+import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { BookOpen, Menu, Maximize2, Minimize2 } from '@lucide/vue'
 import { useMapStore } from '@/stores/map'
 
@@ -31,17 +27,17 @@ function toggleImmersive() {
 </script>
 
 <template>
-  <div class="flex h-full flex-col overflow-hidden bg-white">
+  <div class="flex h-full flex-col overflow-hidden bg-background">
     <!-- 主体：地图全宽 + 悬浮面板 -->
     <div class="relative flex flex-1 overflow-hidden">
       <!-- 中地图区：全宽，面板悬浮其上 -->
-      <main class="relative flex flex-1 flex-col overflow-hidden bg-zinc-50/60">
+      <main class="relative flex flex-1 flex-col overflow-hidden bg-muted/40">
         <!-- 移动端左右抽屉触发按钮 -->
         <div class="absolute left-3 top-3 z-20 flex gap-2 lg:hidden">
           <Button
             variant="ghost"
             size="icon-sm"
-            class="rounded-lg bg-white/90 text-zinc-600 shadow-sm ring-1 ring-zinc-200/60 hover:bg-white/90 hover:text-primary"
+            class="rounded-md bg-background/90 text-muted-foreground shadow-sm ring-1 ring-border/60 backdrop-blur hover:bg-background hover:text-primary"
             title="城市列表"
             @click="leftDrawer = true"
           >
@@ -52,7 +48,7 @@ function toggleImmersive() {
           <Button
             variant="ghost"
             size="icon-sm"
-            class="rounded-lg bg-white/90 text-zinc-600 shadow-sm ring-1 ring-zinc-200/60 hover:bg-white/90 hover:text-primary"
+            class="rounded-md bg-background/90 text-muted-foreground shadow-sm ring-1 ring-border/60 backdrop-blur hover:bg-background hover:text-primary"
             title="详情"
             @click="rightDrawer = true"
           >
@@ -66,7 +62,7 @@ function toggleImmersive() {
         <Button
           variant="ghost"
           size="icon-sm"
-          class="absolute right-3 top-3 z-20 hidden rounded-lg bg-white/80 text-zinc-600 shadow-sm ring-1 ring-zinc-200/60 backdrop-blur-md hover:bg-white/90 hover:text-primary lg:flex"
+          class="absolute right-3 top-3 z-20 hidden rounded-md bg-background/90 text-muted-foreground shadow-sm ring-1 ring-border/60 backdrop-blur hover:bg-background hover:text-primary lg:flex"
           :title="immersive ? '退出沉浸模式' : '进入沉浸模式'"
           @click="toggleImmersive"
         >
@@ -79,7 +75,7 @@ function toggleImmersive() {
       <Transition name="panel-left">
         <Card
           v-if="!immersive"
-          class="absolute left-3 top-1/2 z-10 hidden h-[85%] w-[320px] -translate-y-1/2 overflow-hidden rounded-xl border-zinc-200/60 bg-white/95 shadow-lg backdrop-blur-md lg:flex lg:flex-col"
+          class="absolute left-3 top-1/2 z-10 hidden h-[85%] w-[320px] -translate-y-1/2 overflow-hidden bg-card/95 shadow-lg backdrop-blur lg:flex lg:flex-col"
         >
           <slot name="left" />
         </Card>
@@ -89,7 +85,7 @@ function toggleImmersive() {
       <Transition name="panel-right">
         <Card
           v-if="!immersive && mapStore.selectedCity"
-          class="absolute right-3 top-1/2 z-10 hidden h-[85%] w-[320px] -translate-y-1/2 overflow-hidden rounded-xl border-zinc-200/60 bg-white/95 shadow-lg backdrop-blur-md lg:flex lg:flex-col"
+          class="absolute right-3 top-1/2 z-10 hidden h-[85%] w-[320px] -translate-y-1/2 overflow-hidden bg-card/95 shadow-lg backdrop-blur lg:flex lg:flex-col"
         >
           <slot name="right" />
         </Card>
@@ -122,7 +118,9 @@ function toggleImmersive() {
 /* 左侧面板滑入滑出 */
 .panel-left-enter-active,
 .panel-left-leave-active {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+  transition:
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s ease;
 }
 .panel-left-enter-from,
 .panel-left-leave-to {
@@ -133,7 +131,9 @@ function toggleImmersive() {
 /* 右侧面板滑入滑出 */
 .panel-right-enter-active,
 .panel-right-leave-active {
-  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+  transition:
+    transform 0.3s cubic-bezier(0.4, 0, 0.2, 1),
+    opacity 0.3s ease;
 }
 .panel-right-enter-from,
 .panel-right-leave-to {

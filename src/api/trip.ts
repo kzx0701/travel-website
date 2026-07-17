@@ -76,11 +76,7 @@ export async function listByUser(): Promise<Trip[]> {
  * 根据 id 获取单个行程
  */
 export async function getById(id: string): Promise<Trip | null> {
-  const { data, error } = await supabase
-    .from('trips')
-    .select('*')
-    .eq('id', id)
-    .maybeSingle()
+  const { data, error } = await supabase.from('trips').select('*').eq('id', id).maybeSingle()
   if (error) throw new Error(error.message)
   return data ? mapRow(data as TripRow) : null
 }
@@ -128,16 +124,10 @@ export async function update(id: string, data: TripUpdate): Promise<Trip> {
  * @param id 行程 id
  * @param option.deleteRecords true 时一并删除关联到达记录；false 时仅解绑（trip_id 置空）
  */
-export async function remove(
-  id: string,
-  option: RemoveTripOptions,
-): Promise<void> {
+export async function remove(id: string, option: RemoveTripOptions): Promise<void> {
   if (option.deleteRecords) {
     // 先删除关联的到达记录（RLS 会限制只能删自己的）
-    const { error: recErr } = await supabase
-      .from('visit_records')
-      .delete()
-      .eq('trip_id', id)
+    const { error: recErr } = await supabase.from('visit_records').delete().eq('trip_id', id)
     if (recErr) throw new Error(recErr.message)
   }
   // 删除行程本身；DB 中 visit_records.trip_id ON DELETE SET NULL 会自动解绑

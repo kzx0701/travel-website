@@ -44,10 +44,7 @@ function mapRow(row: ResidenceRow): Residence {
  * 获取当前用户居住地（每用户仅一条，无则返回 null）
  */
 export async function getResidence(): Promise<Residence | null> {
-  const { data, error } = await supabase
-    .from('residences')
-    .select('*')
-    .maybeSingle()
+  const { data, error } = await supabase.from('residences').select('*').maybeSingle()
   if (error) throw new Error(error.message)
   return data ? mapRow(data as ResidenceRow) : null
 }
@@ -80,9 +77,7 @@ export async function saveResidence(data: ResidenceInput): Promise<Residence> {
 /**
  * 更新居住地（仅更新提供的字段，必须已存在）
  */
-export async function updateResidence(
-  data: Partial<ResidenceInput>,
-): Promise<Residence> {
+export async function updateResidence(data: Partial<ResidenceInput>): Promise<Residence> {
   const userId = await getCurrentUserId()
   const update: Record<string, string> = {}
   if (data.provinceCode !== undefined) update.province_code = data.provinceCode

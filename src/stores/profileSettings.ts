@@ -24,9 +24,7 @@ export const useProfileSettingsStore = defineStore('profileSettings', () => {
   }
 
   /** 更新档案设置（不存在则插入），返回更新后的设置 */
-  async function update(
-    data: profileSettingsApi.ProfileSettingsUpdate,
-  ): Promise<ProfileSettings> {
+  async function update(data: profileSettingsApi.ProfileSettingsUpdate): Promise<ProfileSettings> {
     settings.value = await profileSettingsApi.update(data)
     return settings.value
   }

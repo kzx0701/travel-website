@@ -271,24 +271,24 @@ async function handleCopyLink(): Promise<void> {
 </script>
 
 <template>
-  <div class="h-full overflow-hidden bg-slate-50">
+  <div class="h-full overflow-hidden bg-muted/40">
     <!-- 内容区 -->
     <main class="h-full overflow-y-auto">
       <div class="mx-auto w-full max-w-3xl px-4 py-8 sm:px-6 lg:py-10">
         <!-- 页面标题 -->
         <div class="mb-6">
-          <h1 class="text-2xl font-bold tracking-tight text-slate-800">设置</h1>
-          <p class="mt-1 text-sm text-slate-500">管理你的居住地、账号与偏好</p>
+          <h1 class="text-2xl font-bold tracking-tight text-foreground">设置</h1>
+          <p class="mt-1 text-sm text-muted-foreground">管理你的居住地、账号与偏好</p>
         </div>
 
         <!-- ============ 1. 居住地设置 ============ -->
-        <section class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div class="border-b border-slate-100 px-6 py-4">
+        <section class="overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+          <div class="border-b border-border px-6 py-4">
             <div class="flex items-center gap-2">
               <MapPin class="h-5 w-5 text-muted-foreground" />
-              <h2 class="text-base font-semibold text-slate-800">居住地设置</h2>
+              <h2 class="text-base font-semibold text-foreground">居住地设置</h2>
             </div>
-            <p class="mt-1.5 text-xs leading-relaxed text-slate-500">
+            <p class="mt-1.5 text-xs leading-relaxed text-muted-foreground">
               居住地精确到区县级。居住地所在城市不会被点亮，以冷蓝色标识。
               修改居住地后，旧居住地所在城市将恢复点亮。
             </p>
@@ -313,11 +313,11 @@ async function handleCopyLink(): Promise<void> {
         </section>
 
         <!-- ============ 2. 账号信息 ============ -->
-        <section class="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div class="border-b border-slate-100 px-6 py-4">
+        <section class="mt-5 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+          <div class="border-b border-border px-6 py-4">
             <div class="flex items-center gap-2">
               <User class="h-5 w-5 text-primary" />
-              <h2 class="text-base font-semibold text-slate-800">账号信息</h2>
+              <h2 class="text-base font-semibold text-foreground">账号信息</h2>
             </div>
           </div>
 
@@ -328,17 +328,17 @@ async function handleCopyLink(): Promise<void> {
                 v-if="avatarUrl"
                 :src="avatarUrl"
                 alt="头像"
-                class="h-16 w-16 rounded-full bg-slate-100 ring-1 ring-slate-200"
+                class="h-16 w-16 rounded-full bg-muted ring-1 ring-border"
               />
               <div
                 v-else
-                class="flex h-16 w-16 items-center justify-center rounded-full bg-slate-100 text-lg font-bold text-slate-500 ring-1 ring-slate-200"
+                class="flex h-16 w-16 items-center justify-center rounded-full bg-muted text-lg font-bold text-muted-foreground ring-1 ring-border"
               >
                 {{ user?.email?.charAt(0)?.toUpperCase() ?? '?' }}
               </div>
               <div class="min-w-0">
-                <p class="text-xs text-slate-400">邮箱</p>
-                <p class="truncate text-sm font-medium text-slate-700">
+                <p class="text-xs text-muted-foreground">邮箱</p>
+                <p class="truncate text-sm font-medium text-foreground">
                   {{ user?.email ?? '—' }}
                 </p>
               </div>
@@ -346,7 +346,7 @@ async function handleCopyLink(): Promise<void> {
 
             <!-- 用户名编辑 -->
             <div>
-              <label class="mb-1.5 block text-xs font-medium text-slate-500"> 用户名 </label>
+              <label class="mb-1.5 block text-xs font-medium text-muted-foreground"> 用户名 </label>
               <div class="flex gap-2">
                 <Input
                   v-model="displayNameDraft"
@@ -368,21 +368,21 @@ async function handleCopyLink(): Promise<void> {
         </section>
 
         <!-- ============ 3. 偏好设置 ============ -->
-        <section class="mt-5 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-sm">
-          <div class="border-b border-slate-100 px-6 py-4">
+        <section class="mt-5 overflow-hidden rounded-lg border border-border bg-card shadow-sm">
+          <div class="border-b border-border px-6 py-4">
             <div class="flex items-center gap-2">
               <SettingsIcon class="h-5 w-5 text-primary" />
-              <h2 class="text-base font-semibold text-slate-800">偏好设置</h2>
+              <h2 class="text-base font-semibold text-foreground">偏好设置</h2>
             </div>
           </div>
 
-          <div class="divide-y divide-slate-100">
+          <div class="divide-y divide-border">
             <!-- 3.1 出行目的分类管理 -->
             <div class="px-6 py-5">
               <div class="mb-3 flex items-center justify-between">
                 <div>
-                  <p class="text-sm font-medium text-slate-700">出行目的分类</p>
-                  <p class="mt-0.5 text-xs text-slate-400">
+                  <p class="text-sm font-medium text-foreground">出行目的分类</p>
+                  <p class="mt-0.5 text-xs text-muted-foreground">
                     系统预设不可删除，自定义分类删除后关联记录转为"其他"
                   </p>
                 </div>
@@ -402,13 +402,13 @@ async function handleCopyLink(): Promise<void> {
                 <div
                   v-for="cat in purposeStore.categories"
                   :key="cat.id"
-                  class="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2"
+                  class="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2"
                 >
                   <div class="flex items-center gap-2">
-                    <span class="text-sm text-slate-700">{{ cat.name }}</span>
+                    <span class="text-sm text-foreground">{{ cat.name }}</span>
                     <span
                       v-if="cat.isSystem"
-                      class="rounded-full bg-slate-200 px-1.5 py-0.5 text-[10px] font-medium text-slate-500"
+                      class="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground"
                     >
                       系统
                     </span>
@@ -436,20 +436,20 @@ async function handleCopyLink(): Promise<void> {
             <!-- 3.2 个人主页可见性 -->
             <div class="px-6 py-5">
               <div class="mb-3">
-                <p class="text-sm font-medium text-slate-700">个人主页可见性</p>
-                <p class="mt-0.5 text-xs text-slate-400">
+                <p class="text-sm font-medium text-foreground">个人主页可见性</p>
+                <p class="mt-0.5 text-xs text-muted-foreground">
                   开启后，他人可通过分享链接查看你的点亮地图、统计与行程
                 </p>
               </div>
 
               <!-- 公开开关 -->
-              <div class="flex items-center justify-between rounded-lg bg-slate-50 px-3 py-2.5">
+              <div class="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2.5">
                 <div class="flex items-center gap-2">
                   <span
                     class="inline-block h-2 w-2 rounded-full"
-                    :class="isPublic ? 'bg-green-500' : 'bg-slate-300'"
+                    :class="isPublic ? 'bg-green-500' : 'bg-muted-foreground/30'"
                   />
-                  <span class="text-sm text-slate-700">
+                  <span class="text-sm text-foreground">
                     {{ isPublic ? '公开' : '私密' }}
                   </span>
                 </div>
@@ -463,13 +463,13 @@ async function handleCopyLink(): Promise<void> {
               <!-- 分享链接（仅公开时显示） -->
               <div v-if="isPublic" class="mt-3">
                 <div v-if="shareToken" class="space-y-2">
-                  <label class="block text-xs font-medium text-slate-500"> 分享链接 </label>
+                  <label class="block text-xs font-medium text-muted-foreground"> 分享链接 </label>
                   <div class="flex gap-2">
-                    <input
+                    <Input
                       :value="shareUrl"
                       type="text"
                       readonly
-                      class="h-9 min-w-0 flex-1 truncate rounded-lg border border-slate-200 bg-slate-50 px-3 text-xs text-slate-600"
+                      class="h-9 min-w-0 flex-1 truncate bg-muted/40 text-xs text-muted-foreground"
                       @focus="($event.target as HTMLInputElement).select()"
                     />
                     <Button
@@ -496,9 +496,9 @@ async function handleCopyLink(): Promise<void> {
                 <!-- 尚未生成 token -->
                 <div
                   v-else
-                  class="flex items-center justify-between rounded-lg border border-dashed border-slate-200 bg-slate-50/50 px-3 py-3"
+                  class="flex items-center justify-between rounded-lg border border-dashed bg-muted/50 px-3 py-3"
                 >
-                  <p class="text-xs text-slate-400">尚未生成分享链接</p>
+                  <p class="text-xs text-muted-foreground">尚未生成分享链接</p>
                   <Button
                     size="sm"
                     class="h-8"

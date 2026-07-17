@@ -13,14 +13,10 @@ export const usePurposeStore = defineStore('purpose', () => {
   const loading = ref(false)
 
   /** 系统预设分类 */
-  const systemCategories = computed(() =>
-    categories.value.filter((c) => c.isSystem),
-  )
+  const systemCategories = computed(() => categories.value.filter((c) => c.isSystem))
 
   /** 当前用户自定义分类 */
-  const customCategories = computed(() =>
-    categories.value.filter((c) => !c.isSystem),
-  )
+  const customCategories = computed(() => categories.value.filter((c) => !c.isSystem))
 
   /** 加载全部分类（系统 + 自定义） */
   async function loadAll(): Promise<void> {
@@ -35,9 +31,7 @@ export const usePurposeStore = defineStore('purpose', () => {
   /** 新建自定义分类并加入列表 */
   async function createCustom(name: string): Promise<PurposeCategory> {
     const category = await purposeApi.createCustom(name)
-    categories.value = [...categories.value, category].sort(
-      (a, b) => a.sortOrder - b.sortOrder,
-    )
+    categories.value = [...categories.value, category].sort((a, b) => a.sortOrder - b.sortOrder)
     return category
   }
 

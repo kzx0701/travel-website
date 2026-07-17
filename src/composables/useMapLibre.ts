@@ -2,13 +2,17 @@ import { ref, type Ref, onMounted, onUnmounted, nextTick } from 'vue'
 import maplibregl, { type Map, type MapMouseEvent, type GeoJSONSource } from 'maplibre-gl'
 import type { City, MapLevel } from '@/types'
 import { provinces, getCityByCode, getProvinceByCode, getProvinceCenter } from '@/data/cities'
-import { loadGeoJson, getProvinceBBox, type GeoJSON, type GeoJSONFeature } from '@/utils/mapGeoLoader'
+import {
+  loadGeoJson,
+  getProvinceBBox,
+  type GeoJSONFeature,
+} from '@/utils/mapGeoLoader'
 
 // ============================================================================
 // 类型定义
 // ============================================================================
 
-interface UseMapLibreParams {
+export interface UseMapLibreParams {
   level: MapLevel
   regionCode: string
   litCities: City[]
@@ -17,7 +21,7 @@ interface UseMapLibreParams {
   readonly: boolean
 }
 
-interface UseMapLibreCallbacks {
+export interface UseMapLibreCallbacks {
   onCityClick?: (city: City) => void
   onRegionClick?: (code: string, name: string) => void
 }
@@ -67,6 +71,8 @@ const ZOOM = {
   city: 8,
 } as const
 
+type SourceData = Parameters<GeoJSONSource['setData']>[0]
+
 // ============================================================================
 // 世界国家 GeoJSON（静态导入，随仓库提交）
 // ============================================================================
@@ -106,32 +112,6 @@ function getFeatureName(feature: GeoJSONFeature): string | null {
   return name ? String(name) : null
 }
 
-/** 提取 feature 边界框 */
-function extractBBox(feature: GeoJSONFeature): {
-  minLng: number; maxLng: number; minLat: number; maxLat: number
-} | null {
-  const coords = feature.geometry.coordinates
-  if (!coords) return null
-  let minLng = Infinity, maxLng = -Infinity, minLat = Infinity, maxLat = -Infinity
-  function processRing(ring: number[][]) {
-    for (const [lng, lat] of ring) {
-      if (typeof lng !== 'number' || typeof lat !== 'number') continue
-      if (lng < minLng) minLng = lng
-      if (lng > maxLng) maxLng = lng
-      if (lat < minLat) minLat = lat
-      if (lat > maxLat) maxLat = lat
-    }
-  }
-  if (feature.geometry.type === 'Polygon') {
-    for (const ring of coords as number[][][]) processRing(ring)
-  } else if (feature.geometry.type === 'MultiPolygon') {
-    for (const polygon of coords as number[][][][]) {
-      for (const ring of polygon) processRing(ring)
-    }
-  }
-  if (minLng === Infinity) return null
-  return { minLng, maxLng, minLat, maxLat }
-}
 
 // ============================================================================
 // composable 主函数
@@ -246,7 +226,7 @@ export function useMapLibre(
       sources: {
         'world-countries': {
           type: 'geojson',
-          data: worldGeo as unknown as GeoJSON.FeatureCollection,
+          data: worldGeo as unknown as SourceData,
         },
         // 占位空 source，后续 addSource 填充
         'china-provinces': { type: 'geojson', data: emptyFeatureCollection() },
@@ -260,8 +240,17 @@ export function useMapLibre(
           type: 'background',
           paint: {
             'background-color': COLOR.ocean,
-            'background-opacity': ['interpolate', ['linear'], ['zoom'],
-              0, 1, ZOOM.china - 0.5, 1, ZOOM.china + 1, 0.4],
+            'background-opacity': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              0,
+              1,
+              ZOOM.china - 0.5,
+              1,
+              ZOOM.china + 1,
+              0.4,
+            ],
           },
         },
         // 世界国家填充（放大后保留淡灰陆地，避免周围变空白）
@@ -271,8 +260,17 @@ export function useMapLibre(
           source: 'world-countries',
           paint: {
             'fill-color': COLOR.landDefault,
-            'fill-opacity': ['interpolate', ['linear'], ['zoom'],
-              0, 1, ZOOM.china - 0.5, 1, ZOOM.china + 1, 0.4],
+            'fill-opacity': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              0,
+              1,
+              ZOOM.china - 0.5,
+              1,
+              ZOOM.china + 1,
+              0.4,
+            ],
           },
         },
         // 世界国家边界（放大后保留淡边界）
@@ -283,8 +281,17 @@ export function useMapLibre(
           paint: {
             'line-color': COLOR.landBorder,
             'line-width': 0.5,
-            'line-opacity': ['interpolate', ['linear'], ['zoom'],
-              0, 0.6, ZOOM.china - 0.5, 0.6, ZOOM.china + 1, 0.4],
+            'line-opacity': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              0,
+              0.6,
+              ZOOM.china - 0.5,
+              0.6,
+              ZOOM.china + 1,
+              0.4,
+            ],
           },
         },
         // 中国省份底色：不透明，放大后覆盖海洋蓝，让画面转为陆地色调
@@ -294,8 +301,15 @@ export function useMapLibre(
           source: 'china-provinces',
           paint: {
             'fill-color': COLOR.chinaBase,
-            'fill-opacity': ['interpolate', ['linear'], ['zoom'],
-              ZOOM.china - 1, 0, ZOOM.china + 0.5, 1],
+            'fill-opacity': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              ZOOM.china - 1,
+              0,
+              ZOOM.china + 0.5,
+              1,
+            ],
           },
         },
         // 中国省份填充（选中状态优先，其次点亮状态高亮）
@@ -304,13 +318,22 @@ export function useMapLibre(
           type: 'fill',
           source: 'china-provinces',
           paint: {
-            'fill-color': ['match', ['get', 'selected'],
-              1, COLOR.selectedProvince,
-              ['match', ['get', 'lit'],
-                1, COLOR.litProvince,
-                COLOR.unlitProvince]],
-            'fill-opacity': ['interpolate', ['linear'], ['zoom'],
-              ZOOM.china - 1, 0, ZOOM.china + 0.5, 1],
+            'fill-color': [
+              'match',
+              ['get', 'selected'],
+              1,
+              COLOR.selectedProvince,
+              ['match', ['get', 'lit'], 1, COLOR.litProvince, COLOR.unlitProvince],
+            ],
+            'fill-opacity': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              ZOOM.china - 1,
+              0,
+              ZOOM.china + 0.5,
+              1,
+            ],
           },
         },
         // 中国省份外轮廓：浅冷灰加宽描边，制造分层精致感
@@ -320,10 +343,26 @@ export function useMapLibre(
           source: 'china-provinces',
           paint: {
             'line-color': COLOR.provinceOutline,
-            'line-width': ['interpolate', ['linear'], ['zoom'],
-              ZOOM.china, 2.5, ZOOM.province, 3.5],
-            'line-opacity': ['interpolate', ['linear'], ['zoom'],
-              ZOOM.china - 1, 0, ZOOM.china + 0.5, 0.7, ZOOM.city, 0.3],
+            'line-width': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              ZOOM.china,
+              2.5,
+              ZOOM.province,
+              3.5,
+            ],
+            'line-opacity': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              ZOOM.china - 1,
+              0,
+              ZOOM.china + 0.5,
+              0.7,
+              ZOOM.city,
+              0.3,
+            ],
           },
         },
         // 中国省份边界：柔和冷灰蓝细线，选中省份用冷蓝高亮
@@ -332,13 +371,25 @@ export function useMapLibre(
           type: 'line',
           source: 'china-provinces',
           paint: {
-            'line-color': ['match', ['get', 'selected'],
-              1, COLOR.selectedProvinceStroke,
-              COLOR.provinceBorder],
-            'line-width': ['interpolate', ['linear'], ['zoom'],
-              ZOOM.china, 0.6, ZOOM.province, 1],
-            'line-opacity': ['interpolate', ['linear'], ['zoom'],
-              ZOOM.china - 1, 0, ZOOM.china + 0.5, 0.8, ZOOM.city, 0.3],
+            'line-color': [
+              'match',
+              ['get', 'selected'],
+              1,
+              COLOR.selectedProvinceStroke,
+              COLOR.provinceBorder,
+            ],
+            'line-width': ['interpolate', ['linear'], ['zoom'], ZOOM.china, 0.6, ZOOM.province, 1],
+            'line-opacity': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              ZOOM.china - 1,
+              0,
+              ZOOM.china + 0.5,
+              0.8,
+              ZOOM.city,
+              0.3,
+            ],
           },
         },
         // 城市区域填充（省级视图，数据驱动）
@@ -347,15 +398,27 @@ export function useMapLibre(
           type: 'fill',
           source: 'province-cities',
           paint: {
-            'fill-color': ['case',
-              ['==', ['get', 'cityCode'], ''], 'rgba(0,0,0,0)',
-              ['==', ['get', 'isSelected'], 1], COLOR.selected,
-              ['==', ['get', 'isResidence'], 1], COLOR.residence,
-              ['==', ['get', 'isLit'], 1], ['get', 'fillColor'],
+            'fill-color': [
+              'case',
+              ['==', ['get', 'cityCode'], ''],
+              'rgba(0,0,0,0)',
+              ['==', ['get', 'isSelected'], 1],
+              COLOR.selected,
+              ['==', ['get', 'isResidence'], 1],
+              COLOR.residence,
+              ['==', ['get', 'isLit'], 1],
+              ['get', 'fillColor'],
               'rgba(248, 250, 252, 0)',
             ],
-            'fill-opacity': ['interpolate', ['linear'], ['zoom'],
-              ZOOM.province - 1.5, 0, ZOOM.province + 0.5, 1],
+            'fill-opacity': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              ZOOM.province - 1.5,
+              0,
+              ZOOM.province + 0.5,
+              1,
+            ],
           },
         },
         // 城市边界
@@ -364,20 +427,35 @@ export function useMapLibre(
           type: 'line',
           source: 'province-cities',
           paint: {
-            'line-color': ['case',
-              ['==', ['get', 'isSelected'], 1], COLOR.selectedStroke,
-              ['==', ['get', 'isResidence'], 1], COLOR.residenceStroke,
-              ['==', ['get', 'isLit'], 1], ['get', 'strokeColor'],
+            'line-color': [
+              'case',
+              ['==', ['get', 'isSelected'], 1],
+              COLOR.selectedStroke,
+              ['==', ['get', 'isResidence'], 1],
+              COLOR.residenceStroke,
+              ['==', ['get', 'isLit'], 1],
+              ['get', 'strokeColor'],
               COLOR.cityBorder,
             ],
-            'line-width': ['case',
-              ['==', ['get', 'isSelected'], 1], 2.2,
-              ['==', ['get', 'isLit'], 1], 1.4,
-              ['==', ['get', 'isResidence'], 1], 1.4,
+            'line-width': [
+              'case',
+              ['==', ['get', 'isSelected'], 1],
+              2.2,
+              ['==', ['get', 'isLit'], 1],
+              1.4,
+              ['==', ['get', 'isResidence'], 1],
+              1.4,
               0.8,
             ],
-            'line-opacity': ['interpolate', ['linear'], ['zoom'],
-              ZOOM.province - 1.5, 0, ZOOM.province + 0.5, 1],
+            'line-opacity': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              ZOOM.province - 1.5,
+              0,
+              ZOOM.province + 0.5,
+              1,
+            ],
           },
         },
         // 城市圆点（全国视图）
@@ -386,17 +464,38 @@ export function useMapLibre(
           type: 'circle',
           source: 'city-centers',
           paint: {
-            'circle-color': ['match', ['get', 'isResidence'],
-              1, COLOR.dotResidence,
-              COLOR.dotVisit],
-            'circle-radius': ['interpolate', ['linear'], ['get', 'visitCount'],
-              1, 5, 3, 7, 4, 9],
+            'circle-color': [
+              'match',
+              ['get', 'isResidence'],
+              1,
+              COLOR.dotResidence,
+              COLOR.dotVisit,
+            ],
+            'circle-radius': ['interpolate', ['linear'], ['get', 'visitCount'], 1, 5, 3, 7, 4, 9],
             'circle-stroke-color': '#ffffff',
             'circle-stroke-width': 1.5,
-            'circle-stroke-opacity': ['interpolate', ['linear'], ['zoom'],
-              0, 0.8, ZOOM.province, 0.8, ZOOM.province + 1, 0],
-            'circle-opacity': ['interpolate', ['linear'], ['zoom'],
-              0, 1, ZOOM.province - 0.5, 1, ZOOM.province + 1, 0],
+            'circle-stroke-opacity': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              0,
+              0.8,
+              ZOOM.province,
+              0.8,
+              ZOOM.province + 1,
+              0,
+            ],
+            'circle-opacity': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              0,
+              1,
+              ZOOM.province - 0.5,
+              1,
+              ZOOM.province + 1,
+              0,
+            ],
             'circle-blur': 0.2,
           },
         },
@@ -406,13 +505,35 @@ export function useMapLibre(
           type: 'circle',
           source: 'city-centers',
           paint: {
-            'circle-color': ['match', ['get', 'isResidence'],
-              1, COLOR.dotResidence,
-              COLOR.dotVisit],
-            'circle-radius': ['interpolate', ['linear'], ['get', 'visitCount'],
-              1, 10, 3, 13, 4, 16],
-            'circle-opacity': ['interpolate', ['linear'], ['zoom'],
-              0, 0.25, ZOOM.province - 0.5, 0.25, ZOOM.province + 1, 0],
+            'circle-color': [
+              'match',
+              ['get', 'isResidence'],
+              1,
+              COLOR.dotResidence,
+              COLOR.dotVisit,
+            ],
+            'circle-radius': [
+              'interpolate',
+              ['linear'],
+              ['get', 'visitCount'],
+              1,
+              10,
+              3,
+              13,
+              4,
+              16,
+            ],
+            'circle-opacity': [
+              'interpolate',
+              ['linear'],
+              ['zoom'],
+              0,
+              0.25,
+              ZOOM.province - 0.5,
+              0.25,
+              ZOOM.province + 1,
+              0,
+            ],
             'circle-blur': 0.8,
           },
         },
@@ -420,7 +541,7 @@ export function useMapLibre(
     }
   }
 
-  function emptyFeatureCollection(): GeoJSON.FeatureCollection {
+  function emptyFeatureCollection(): SourceData {
     return { type: 'FeatureCollection', features: [] }
   }
 
@@ -435,7 +556,7 @@ export function useMapLibre(
     if (chinaGeo && map) {
       const source = map.getSource('china-provinces') as GeoJSONSource | undefined
       if (source) {
-        source.setData(chinaGeo as unknown as GeoJSON.FeatureCollection)
+        source.setData(chinaGeo as unknown as SourceData)
       }
       mapAvailable.value = true
     } else {
@@ -450,7 +571,9 @@ export function useMapLibre(
     // 点击中国省份（任意层级均可点击切换，支持省份间快速跳转）
     map.on('click', 'province-fill', (e: MapMouseEvent) => {
       if (params.value.readonly || flying.value) return
-      const feature = (e as unknown as { features?: Array<{ properties: Record<string, unknown> }> }).features?.[0]
+      const feature = (
+        e as unknown as { features?: Array<{ properties: Record<string, unknown> }> }
+      ).features?.[0]
       if (!feature) return
       const name = feature.properties?.name as string | undefined
       if (!name) return
@@ -464,7 +587,9 @@ export function useMapLibre(
     map.on('click', 'city-fill', (e: MapMouseEvent) => {
       if (params.value.readonly || flying.value) return
       if (params.value.level !== 'province') return
-      const feature = (e as unknown as { features?: Array<{ properties: Record<string, unknown> }> }).features?.[0]
+      const feature = (
+        e as unknown as { features?: Array<{ properties: Record<string, unknown> }> }
+      ).features?.[0]
       if (!feature) return
       const cityCode = feature.properties?.cityCode as string | undefined
       if (!cityCode) return
@@ -556,7 +681,10 @@ export function useMapLibre(
           selected: getFeatureName(f) === selectedProvinceName ? 1 : 0,
         },
       }))
-      source.setData({ type: 'FeatureCollection', features } as unknown as GeoJSON.FeatureCollection)
+      source.setData({
+        type: 'FeatureCollection',
+        features,
+      } as unknown as SourceData)
     })
   }
 
@@ -604,7 +732,7 @@ export function useMapLibre(
     source.setData({
       type: 'FeatureCollection',
       features,
-    } as unknown as GeoJSON.FeatureCollection)
+    } as unknown as SourceData)
   }
 
   /** 加载并更新省级城市区域数据 */
@@ -642,7 +770,7 @@ export function useMapLibre(
       source.setData({
         type: 'FeatureCollection',
         features,
-      } as unknown as GeoJSON.FeatureCollection)
+      } as unknown as SourceData)
     }
   }
 
@@ -682,7 +810,10 @@ export function useMapLibre(
     const bbox = getProvinceBBox(province.name)
     if (bbox) {
       map.fitBounds(
-        [[bbox.minLng, bbox.minLat], [bbox.maxLng, bbox.maxLat]],
+        [
+          [bbox.minLng, bbox.minLat],
+          [bbox.maxLng, bbox.maxLat],
+        ],
         { duration: 1500, padding: 80 },
       )
     } else {
@@ -740,8 +871,8 @@ export function useMapLibre(
     const height = containerRef.value.clientHeight
     // 桌面端（lg: 1024px）有左右悬浮面板遮挡中间区域
     const isDesktop = width >= 1024
-    const leftPad = isDesktop ? 300 : 0   // 左面板 280px + left-3 间距
-    const rightPad = isDesktop ? 340 : 0  // 右面板 320px + right-3 间距
+    const leftPad = isDesktop ? 300 : 0 // 左面板 280px + left-3 间距
+    const rightPad = isDesktop ? 340 : 0 // 右面板 320px + right-3 间距
     const visibleWidth = Math.max(width - leftPad - rightPad, 300)
     // 地球直径应接近可见区域较小边，让地球填充中间区域
     const targetSize = Math.min(visibleWidth, height)

@@ -536,7 +536,12 @@ export const districts: District[] = [
   { code: '152921', name: '阿拉善左旗', cityCode: '152900', cityName: '阿拉善盟' },
   { code: '152922', name: '阿拉善右旗', cityCode: '152900', cityName: '阿拉善盟' },
   { code: '152923', name: '额济纳旗', cityCode: '152900', cityName: '阿拉善盟' },
-  { code: '152971', name: '内蒙古阿拉善高新技术产业开发区', cityCode: '152900', cityName: '阿拉善盟' },
+  {
+    code: '152971',
+    name: '内蒙古阿拉善高新技术产业开发区',
+    cityCode: '152900',
+    cityName: '阿拉善盟',
+  },
 
   // 沈阳市（210100，13 个区县）
   { code: '210102', name: '和平区', cityCode: '210100', cityName: '沈阳市' },
@@ -2087,7 +2092,12 @@ export const districts: District[] = [
   { code: '429004', name: '仙桃市', cityCode: '429000', cityName: '湖北省-自治区直辖县级行政区划' },
   { code: '429005', name: '潜江市', cityCode: '429000', cityName: '湖北省-自治区直辖县级行政区划' },
   { code: '429006', name: '天门市', cityCode: '429000', cityName: '湖北省-自治区直辖县级行政区划' },
-  { code: '429021', name: '神农架林区', cityCode: '429000', cityName: '湖北省-自治区直辖县级行政区划' },
+  {
+    code: '429021',
+    name: '神农架林区',
+    cityCode: '429000',
+    cityName: '湖北省-自治区直辖县级行政区划',
+  },
 
   // 长沙市（430100，9 个区县）
   { code: '430102', name: '芙蓉区', cityCode: '430100', cityName: '长沙市' },
@@ -2572,7 +2582,12 @@ export const districts: District[] = [
   { code: '460323', name: '中沙群岛的岛礁及其海域', cityCode: '460300', cityName: '三沙市' },
 
   // 海南省-自治区直辖县级行政区划（469000，15 个区县）
-  { code: '469001', name: '五指山市', cityCode: '469000', cityName: '海南省-自治区直辖县级行政区划' },
+  {
+    code: '469001',
+    name: '五指山市',
+    cityCode: '469000',
+    cityName: '海南省-自治区直辖县级行政区划',
+  },
   { code: '469002', name: '琼海市', cityCode: '469000', cityName: '海南省-自治区直辖县级行政区划' },
   { code: '469005', name: '文昌市', cityCode: '469000', cityName: '海南省-自治区直辖县级行政区划' },
   { code: '469006', name: '万宁市', cityCode: '469000', cityName: '海南省-自治区直辖县级行政区划' },
@@ -2581,12 +2596,42 @@ export const districts: District[] = [
   { code: '469022', name: '屯昌县', cityCode: '469000', cityName: '海南省-自治区直辖县级行政区划' },
   { code: '469023', name: '澄迈县', cityCode: '469000', cityName: '海南省-自治区直辖县级行政区划' },
   { code: '469024', name: '临高县', cityCode: '469000', cityName: '海南省-自治区直辖县级行政区划' },
-  { code: '469025', name: '白沙黎族自治县', cityCode: '469000', cityName: '海南省-自治区直辖县级行政区划' },
-  { code: '469026', name: '昌江黎族自治县', cityCode: '469000', cityName: '海南省-自治区直辖县级行政区划' },
-  { code: '469027', name: '乐东黎族自治县', cityCode: '469000', cityName: '海南省-自治区直辖县级行政区划' },
-  { code: '469028', name: '陵水黎族自治县', cityCode: '469000', cityName: '海南省-自治区直辖县级行政区划' },
-  { code: '469029', name: '保亭黎族苗族自治县', cityCode: '469000', cityName: '海南省-自治区直辖县级行政区划' },
-  { code: '469030', name: '琼中黎族苗族自治县', cityCode: '469000', cityName: '海南省-自治区直辖县级行政区划' },
+  {
+    code: '469025',
+    name: '白沙黎族自治县',
+    cityCode: '469000',
+    cityName: '海南省-自治区直辖县级行政区划',
+  },
+  {
+    code: '469026',
+    name: '昌江黎族自治县',
+    cityCode: '469000',
+    cityName: '海南省-自治区直辖县级行政区划',
+  },
+  {
+    code: '469027',
+    name: '乐东黎族自治县',
+    cityCode: '469000',
+    cityName: '海南省-自治区直辖县级行政区划',
+  },
+  {
+    code: '469028',
+    name: '陵水黎族自治县',
+    cityCode: '469000',
+    cityName: '海南省-自治区直辖县级行政区划',
+  },
+  {
+    code: '469029',
+    name: '保亭黎族苗族自治县',
+    cityCode: '469000',
+    cityName: '海南省-自治区直辖县级行政区划',
+  },
+  {
+    code: '469030',
+    name: '琼中黎族苗族自治县',
+    cityCode: '469000',
+    cityName: '海南省-自治区直辖县级行政区划',
+  },
 
   // 重庆市（500100，38 个区县）
   { code: '500101', name: '万州区', cityCode: '500100', cityName: '重庆市' },
@@ -3047,7 +3092,12 @@ export const districts: District[] = [
   { code: '530922', name: '云县', cityCode: '530900', cityName: '临沧市' },
   { code: '530923', name: '永德县', cityCode: '530900', cityName: '临沧市' },
   { code: '530924', name: '镇康县', cityCode: '530900', cityName: '临沧市' },
-  { code: '530925', name: '双江拉祜族佤族布朗族傣族自治县', cityCode: '530900', cityName: '临沧市' },
+  {
+    code: '530925',
+    name: '双江拉祜族佤族布朗族傣族自治县',
+    cityCode: '530900',
+    cityName: '临沧市',
+  },
   { code: '530926', name: '耿马傣族佤族自治县', cityCode: '530900', cityName: '临沧市' },
   { code: '530927', name: '沧源佤族自治县', cityCode: '530900', cityName: '临沧市' },
 
@@ -3075,7 +3125,12 @@ export const districts: District[] = [
   { code: '532527', name: '泸西县', cityCode: '532500', cityName: '红河哈尼族彝族自治州' },
   { code: '532528', name: '元阳县', cityCode: '532500', cityName: '红河哈尼族彝族自治州' },
   { code: '532529', name: '红河县', cityCode: '532500', cityName: '红河哈尼族彝族自治州' },
-  { code: '532530', name: '金平苗族瑶族傣族自治县', cityCode: '532500', cityName: '红河哈尼族彝族自治州' },
+  {
+    code: '532530',
+    name: '金平苗族瑶族傣族自治县',
+    cityCode: '532500',
+    cityName: '红河哈尼族彝族自治州',
+  },
   { code: '532531', name: '绿春县', cityCode: '532500', cityName: '红河哈尼族彝族自治州' },
   { code: '532532', name: '河口瑶族自治县', cityCode: '532500', cityName: '红河哈尼族彝族自治州' },
 
@@ -3118,8 +3173,18 @@ export const districts: District[] = [
   // 怒江傈僳族自治州（533300，4 个区县）
   { code: '533301', name: '泸水市', cityCode: '533300', cityName: '怒江傈僳族自治州' },
   { code: '533323', name: '福贡县', cityCode: '533300', cityName: '怒江傈僳族自治州' },
-  { code: '533324', name: '贡山独龙族怒族自治县', cityCode: '533300', cityName: '怒江傈僳族自治州' },
-  { code: '533325', name: '兰坪白族普米族自治县', cityCode: '533300', cityName: '怒江傈僳族自治州' },
+  {
+    code: '533324',
+    name: '贡山独龙族怒族自治县',
+    cityCode: '533300',
+    cityName: '怒江傈僳族自治州',
+  },
+  {
+    code: '533325',
+    name: '兰坪白族普米族自治县',
+    cityCode: '533300',
+    cityName: '怒江傈僳族自治州',
+  },
 
   // 迪庆藏族自治州（533400，3 个区县）
   { code: '533401', name: '香格里拉市', cityCode: '533400', cityName: '迪庆藏族自治州' },
@@ -3448,7 +3513,12 @@ export const districts: District[] = [
   { code: '622924', name: '广河县', cityCode: '622900', cityName: '临夏回族自治州' },
   { code: '622925', name: '和政县', cityCode: '622900', cityName: '临夏回族自治州' },
   { code: '622926', name: '东乡族自治县', cityCode: '622900', cityName: '临夏回族自治州' },
-  { code: '622927', name: '积石山保安族东乡族撒拉族自治县', cityCode: '622900', cityName: '临夏回族自治州' },
+  {
+    code: '622927',
+    name: '积石山保安族东乡族撒拉族自治县',
+    cityCode: '622900',
+    cityName: '临夏回族自治州',
+  },
 
   // 甘南藏族自治州（623000，8 个区县）
   { code: '623001', name: '合作市', cityCode: '623000', cityName: '甘南藏族自治州' },
@@ -3519,7 +3589,12 @@ export const districts: District[] = [
   { code: '632821', name: '乌兰县', cityCode: '632800', cityName: '海西蒙古族藏族自治州' },
   { code: '632822', name: '都兰县', cityCode: '632800', cityName: '海西蒙古族藏族自治州' },
   { code: '632823', name: '天峻县', cityCode: '632800', cityName: '海西蒙古族藏族自治州' },
-  { code: '632857', name: '大柴旦行政委员会', cityCode: '632800', cityName: '海西蒙古族藏族自治州' },
+  {
+    code: '632857',
+    name: '大柴旦行政委员会',
+    cityCode: '632800',
+    cityName: '海西蒙古族藏族自治州',
+  },
 
   // 银川市（640100，6 个区县）
   { code: '640104', name: '兴庆区', cityCode: '640100', cityName: '银川市' },
@@ -3604,7 +3679,12 @@ export const districts: District[] = [
   { code: '652827', name: '和静县', cityCode: '652800', cityName: '巴音郭楞蒙古自治州' },
   { code: '652828', name: '和硕县', cityCode: '652800', cityName: '巴音郭楞蒙古自治州' },
   { code: '652829', name: '博湖县', cityCode: '652800', cityName: '巴音郭楞蒙古自治州' },
-  { code: '652871', name: '库尔勒经济技术开发区', cityCode: '652800', cityName: '巴音郭楞蒙古自治州' },
+  {
+    code: '652871',
+    name: '库尔勒经济技术开发区',
+    cityCode: '652800',
+    cityName: '巴音郭楞蒙古自治州',
+  },
 
   // 阿克苏地区（652900，9 个区县）
   { code: '652901', name: '阿克苏市', cityCode: '652900', cityName: '阿克苏地区' },
@@ -3680,18 +3760,72 @@ export const districts: District[] = [
   { code: '654326', name: '吉木乃县', cityCode: '654300', cityName: '阿勒泰地区' },
 
   // 新疆维吾尔自治区-自治区直辖县级行政区划（659000，11 个区县）
-  { code: '659001', name: '石河子市', cityCode: '659000', cityName: '新疆维吾尔自治区-自治区直辖县级行政区划' },
-  { code: '659002', name: '阿拉尔市', cityCode: '659000', cityName: '新疆维吾尔自治区-自治区直辖县级行政区划' },
-  { code: '659003', name: '图木舒克市', cityCode: '659000', cityName: '新疆维吾尔自治区-自治区直辖县级行政区划' },
-  { code: '659004', name: '五家渠市', cityCode: '659000', cityName: '新疆维吾尔自治区-自治区直辖县级行政区划' },
-  { code: '659005', name: '北屯市', cityCode: '659000', cityName: '新疆维吾尔自治区-自治区直辖县级行政区划' },
-  { code: '659006', name: '铁门关市', cityCode: '659000', cityName: '新疆维吾尔自治区-自治区直辖县级行政区划' },
-  { code: '659007', name: '双河市', cityCode: '659000', cityName: '新疆维吾尔自治区-自治区直辖县级行政区划' },
-  { code: '659008', name: '可克达拉市', cityCode: '659000', cityName: '新疆维吾尔自治区-自治区直辖县级行政区划' },
-  { code: '659009', name: '昆玉市', cityCode: '659000', cityName: '新疆维吾尔自治区-自治区直辖县级行政区划' },
-  { code: '659010', name: '胡杨河市', cityCode: '659000', cityName: '新疆维吾尔自治区-自治区直辖县级行政区划' },
-  { code: '659011', name: '新星市', cityCode: '659000', cityName: '新疆维吾尔自治区-自治区直辖县级行政区划' },
-
+  {
+    code: '659001',
+    name: '石河子市',
+    cityCode: '659000',
+    cityName: '新疆维吾尔自治区-自治区直辖县级行政区划',
+  },
+  {
+    code: '659002',
+    name: '阿拉尔市',
+    cityCode: '659000',
+    cityName: '新疆维吾尔自治区-自治区直辖县级行政区划',
+  },
+  {
+    code: '659003',
+    name: '图木舒克市',
+    cityCode: '659000',
+    cityName: '新疆维吾尔自治区-自治区直辖县级行政区划',
+  },
+  {
+    code: '659004',
+    name: '五家渠市',
+    cityCode: '659000',
+    cityName: '新疆维吾尔自治区-自治区直辖县级行政区划',
+  },
+  {
+    code: '659005',
+    name: '北屯市',
+    cityCode: '659000',
+    cityName: '新疆维吾尔自治区-自治区直辖县级行政区划',
+  },
+  {
+    code: '659006',
+    name: '铁门关市',
+    cityCode: '659000',
+    cityName: '新疆维吾尔自治区-自治区直辖县级行政区划',
+  },
+  {
+    code: '659007',
+    name: '双河市',
+    cityCode: '659000',
+    cityName: '新疆维吾尔自治区-自治区直辖县级行政区划',
+  },
+  {
+    code: '659008',
+    name: '可克达拉市',
+    cityCode: '659000',
+    cityName: '新疆维吾尔自治区-自治区直辖县级行政区划',
+  },
+  {
+    code: '659009',
+    name: '昆玉市',
+    cityCode: '659000',
+    cityName: '新疆维吾尔自治区-自治区直辖县级行政区划',
+  },
+  {
+    code: '659010',
+    name: '胡杨河市',
+    cityCode: '659000',
+    cityName: '新疆维吾尔自治区-自治区直辖县级行政区划',
+  },
+  {
+    code: '659011',
+    name: '新星市',
+    cityCode: '659000',
+    cityName: '新疆维吾尔自治区-自治区直辖县级行政区划',
+  },
 ]
 
 /**

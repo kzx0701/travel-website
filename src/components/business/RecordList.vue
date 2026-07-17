@@ -79,7 +79,7 @@ function handleCancelDelete(): void {
       <div
         v-for="i in 3"
         :key="i"
-        class="rounded-xl border border-border/40 bg-card/50 px-3 py-2.5"
+        class="rounded-lg border border-border/40 bg-card/50 px-3 py-2.5"
       >
         <div class="flex items-center justify-between">
           <Skeleton class="h-3 w-20" />
@@ -103,7 +103,7 @@ function handleCancelDelete(): void {
       <div
         v-for="record in sortedRecords"
         :key="record.id"
-        class="group relative cursor-pointer overflow-hidden rounded-xl border border-border/40 bg-card/50 px-3 py-2.5 transition-all duration-200 ease-out hover:border-primary/30 hover:bg-card hover:shadow-sm active:scale-[0.99]"
+        class="group relative cursor-pointer overflow-hidden rounded-lg border border-border/40 bg-card/50 px-3 py-2.5 transition-all duration-200 ease-out hover:border-primary/30 hover:bg-card hover:shadow-sm active:scale-[0.99]"
         @click="handleEdit(record)"
       >
         <!-- 第一行：时间 + 目的标签 -->

@@ -14,10 +14,7 @@ import {
 } from '@/components/ui/select'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import { useResidenceStore } from '@/stores/residence'
-import {
-  provinces,
-  getCitiesByProvince,
-} from '@/data/cities'
+import { provinces, getCitiesByProvince } from '@/data/cities'
 import { getDistrictsByCity } from '@/data/districts'
 import type { Residence } from '@/types'
 
@@ -77,13 +74,9 @@ watch(
 )
 
 // ---- 派生：级联选项 ----
-const cityOptions = computed(() =>
-  getCitiesByProvince(selectedProvinceCode.value),
-)
+const cityOptions = computed(() => getCitiesByProvince(selectedProvinceCode.value))
 
-const districtOptions = computed(() =>
-  getDistrictsByCity(selectedCityCode.value),
-)
+const districtOptions = computed(() => getDistrictsByCity(selectedCityCode.value))
 
 // 城市是否存在区县数据（无数据时禁用区县 Select，居住地记为城市级）
 const hasDistricts = computed(() => districtOptions.value.length > 0)
@@ -168,9 +161,7 @@ async function performSave(input: ReturnType<typeof buildResidenceInput>): Promi
   try {
     const isModify = !!props.modelValue
     // 已存在 → update；首次设置 → save（upsert）
-    const result = isModify
-      ? await residenceStore.update(input)
-      : await residenceStore.save(input)
+    const result = isModify ? await residenceStore.update(input) : await residenceStore.save(input)
     emit('update:modelValue', result)
     emit('change', result)
     toast.success(isModify ? '居住地已更新' : '居住地已保存')
@@ -224,18 +215,16 @@ function handleCancelModify(): void {
 <template>
   <div class="residence-selector">
     <!-- 当前居住地展示 -->
-    <div
-      class="flex items-center gap-2 rounded-lg bg-slate-50 px-3 py-2.5"
-    >
+    <div class="flex items-center gap-2 rounded-lg bg-muted/40 px-3 py-2.5">
       <MapPin
         class="h-4 w-4 shrink-0"
         :class="modelValue ? 'text-primary' : 'text-muted-foreground'"
       />
       <div class="min-w-0 flex-1">
-        <p class="text-xs text-slate-400">当前居住地</p>
+        <p class="text-xs text-muted-foreground">当前居住地</p>
         <p
           class="truncate text-sm font-medium"
-          :class="modelValue ? 'text-slate-800' : 'text-slate-400'"
+          :class="modelValue ? 'text-foreground' : 'text-muted-foreground'"
         >
           {{ currentResidenceLabel }}
         </p>
@@ -255,11 +244,7 @@ function handleCancelModify(): void {
         <SelectContent>
           <SelectGroup>
             <SelectLabel>省份</SelectLabel>
-            <SelectItem
-              v-for="p in provinces"
-              :key="p.code"
-              :value="p.code"
-            >
+            <SelectItem v-for="p in provinces" :key="p.code" :value="p.code">
               {{ p.name }}
             </SelectItem>
           </SelectGroup>
@@ -278,11 +263,7 @@ function handleCancelModify(): void {
         <SelectContent>
           <SelectGroup>
             <SelectLabel>城市</SelectLabel>
-            <SelectItem
-              v-for="c in cityOptions"
-              :key="c.code"
-              :value="c.code"
-            >
+            <SelectItem v-for="c in cityOptions" :key="c.code" :value="c.code">
               {{ c.name }}
             </SelectItem>
           </SelectGroup>
@@ -302,11 +283,7 @@ function handleCancelModify(): void {
           <SelectGroup>
             <SelectLabel>区县</SelectLabel>
             <SelectItem :value="NO_DISTRICT">不限区县</SelectItem>
-            <SelectItem
-              v-for="d in districtOptions"
-              :key="d.code"
-              :value="d.code"
-            >
+            <SelectItem v-for="d in districtOptions" :key="d.code" :value="d.code">
               {{ d.name }}
             </SelectItem>
           </SelectGroup>
@@ -316,10 +293,7 @@ function handleCancelModify(): void {
 
     <!-- 操作区 -->
     <div class="mt-3 flex items-center justify-end gap-2">
-      <Button
-        :disabled="!hasCityLevel || !isDirty || saving"
-        @click="handleSave"
-      >
+      <Button :disabled="!hasCityLevel || !isDirty || saving" @click="handleSave">
         {{ saving ? '保存中…' : '保存居住地' }}
       </Button>
     </div>

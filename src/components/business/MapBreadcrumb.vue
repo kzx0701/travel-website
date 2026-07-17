@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { computed } from 'vue'
+import { Button } from '@/components/ui/button'
 import type { MapLevel } from '@/types'
 
 /**
@@ -32,9 +33,7 @@ interface Crumb {
 }
 
 const crumbs = computed<Crumb[]>(() => {
-  const list: Crumb[] = [
-    { label: '中国', level: 'country', active: props.level === 'country' },
-  ]
+  const list: Crumb[] = [{ label: '中国', level: 'country', active: props.level === 'country' }]
   if (props.provinceName) {
     list.push({
       label: props.provinceName,
@@ -64,27 +63,29 @@ function handleNavigate(crumb: Crumb): void {
   <nav class="map-breadcrumb flex items-center gap-1 text-sm" aria-label="地图层级">
     <template v-for="(crumb, idx) in crumbs" :key="crumb.level ?? 'current'">
       <!-- 分隔符 -->
-      <span v-if="idx > 0" class="text-gray-400">/</span>
+      <span v-if="idx > 0" class="text-muted-foreground">/</span>
 
       <!-- 当前级且非 country：加粗不可点 -->
       <span
         v-if="crumb.active && crumb.level !== 'country'"
-        class="font-semibold text-gray-900"
+        class="font-semibold text-foreground"
         aria-current="page"
       >
         {{ crumb.label }}
       </span>
 
       <!-- 可点击：上级回退，或 country 级（即使激活也可点击以重新聚焦） -->
-      <button
+      <Button
         v-else
         type="button"
-        class="cursor-pointer rounded px-1 transition-colors hover:text-primary"
-        :class="crumb.active ? 'font-semibold text-gray-900' : 'text-gray-500'"
+        variant="ghost"
+        size="xs"
+        class="h-6 px-1 font-normal hover:bg-transparent hover:text-primary"
+        :class="crumb.active ? 'font-semibold text-foreground' : 'text-muted-foreground'"
         @click="handleNavigate(crumb)"
       >
         {{ crumb.label }}
-      </button>
+      </Button>
     </template>
   </nav>
 </template>
