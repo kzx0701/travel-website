@@ -254,17 +254,17 @@ export function useMapLibre(
         'city-centers': { type: 'geojson', data: emptyFeatureCollection() },
       },
       layers: [
-        // 海洋背景（globe 模式下作为地球底色；放大进入中国时渐隐，避免满屏蓝）
+        // 海洋背景（globe 模式下作为地球底色；放大进入中国时渐淡但不消失，保留地球感）
         {
           id: 'ocean-background',
           type: 'background',
           paint: {
             'background-color': COLOR.ocean,
             'background-opacity': ['interpolate', ['linear'], ['zoom'],
-              0, 1, ZOOM.china - 0.5, 1, ZOOM.china + 1, 0],
+              0, 1, ZOOM.china - 0.5, 1, ZOOM.china + 1, 0.4],
           },
         },
-        // 世界国家填充
+        // 世界国家填充（放大后保留淡灰陆地，避免周围变空白）
         {
           id: 'world-fill',
           type: 'fill',
@@ -272,10 +272,10 @@ export function useMapLibre(
           paint: {
             'fill-color': COLOR.landDefault,
             'fill-opacity': ['interpolate', ['linear'], ['zoom'],
-              0, 1, ZOOM.china - 0.5, 1, ZOOM.china + 1, 0],
+              0, 1, ZOOM.china - 0.5, 1, ZOOM.china + 1, 0.4],
           },
         },
-        // 世界国家边界
+        // 世界国家边界（放大后保留淡边界）
         {
           id: 'world-border',
           type: 'line',
@@ -284,7 +284,7 @@ export function useMapLibre(
             'line-color': COLOR.landBorder,
             'line-width': 0.5,
             'line-opacity': ['interpolate', ['linear'], ['zoom'],
-              0, 0.6, ZOOM.china - 0.5, 0.6, ZOOM.china + 1, 0],
+              0, 0.6, ZOOM.china - 0.5, 0.6, ZOOM.china + 1, 0.4],
           },
         },
         // 中国省份底色：不透明，放大后覆盖海洋蓝，让画面转为陆地色调
@@ -579,6 +579,27 @@ export function useMapLibre(
         isResidence: city.code === residenceCode ? 1 : 0,
       },
     }))
+
+    // 居住地城市无到达记录时不在 litCities 中，需单独补一个圆点 Feature，
+    // 否则全国视图下居住地没有任何视觉标识
+    if (residenceCode && !features.some((f) => f.properties.cityCode === residenceCode)) {
+      const residenceCity = getCityByCode(residenceCode)
+      if (residenceCity) {
+        features.push({
+          type: 'Feature',
+          geometry: {
+            type: 'Point',
+            coordinates: [residenceCity.longitude, residenceCity.latitude],
+          },
+          properties: {
+            cityCode: residenceCity.code,
+            cityName: residenceCity.name,
+            visitCount: 0,
+            isResidence: 1,
+          },
+        })
+      }
+    }
 
     source.setData({
       type: 'FeatureCollection',

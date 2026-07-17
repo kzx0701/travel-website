@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { ChevronDown, LogOut, MapPin, Settings } from '@lucide/vue'
+import { ChevronDown, LogOut, MapPin, Settings, UserRound } from '@lucide/vue'
 import logoDark from '@/assets/images/logo_dark.png'
 import {
   DropdownMenu,
@@ -37,7 +37,6 @@ const tabs: TabItem[] = [
   { name: 'map', label: '地图', to: '/' },
   { name: 'statistics', label: '统计', to: '/statistics' },
   { name: 'timeline', label: '时间线', to: '/timeline' },
-  { name: 'profile', label: '个人主页', to: '/profile' },
 ]
 
 const activeTab = computed(() => route.name as string)
@@ -54,6 +53,10 @@ const residenceLabel = computed(
 
 function handleGotoSettings(): void {
   router.push('/settings')
+}
+
+function handleGotoProfile(): void {
+  router.push('/profile')
 }
 
 async function handleLogout(): Promise<void> {
@@ -139,14 +142,6 @@ async function handleLogout(): Promise<void> {
           </button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end" class="w-56">
-          <DropdownMenuLabel class="flex flex-col gap-0.5">
-            <span class="text-sm font-medium text-foreground">
-              {{ user?.displayName ?? '旅行者' }}
-            </span>
-            <span class="text-xs font-normal text-slate-400">
-              {{ user?.email }}
-            </span>
-          </DropdownMenuLabel>
           <DropdownMenuLabel
             v-if="residenceLabel"
             class="flex items-center gap-1.5 text-xs font-normal text-slate-400"
@@ -154,7 +149,11 @@ async function handleLogout(): Promise<void> {
             <MapPin class="h-3 w-3" />
             居住地：{{ residenceLabel }}
           </DropdownMenuLabel>
-          <DropdownMenuSeparator />
+          <DropdownMenuSeparator v-if="residenceLabel" />
+          <DropdownMenuItem class="cursor-pointer" @select="handleGotoProfile">
+            <UserRound class="h-4 w-4" />
+            个人主页
+          </DropdownMenuItem>
           <DropdownMenuItem class="cursor-pointer" @select="handleGotoSettings">
             <Settings class="h-4 w-4" />
             设置
