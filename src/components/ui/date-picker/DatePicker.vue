@@ -35,6 +35,9 @@ const props = withDefaults(
     disabled?: boolean
     format?: string
     class?: string
+    // 是否 teleport 弹出层到 body；在 reka-ui Dialog 内使用时需传 false，
+    // 否则日历脱离 Dialog DOM 子树被 focus trap 拦截导致点击无效
+    teleport?: boolean
   }>(),
   {
     range: false,
@@ -44,6 +47,7 @@ const props = withDefaults(
     clearable: true,
     disabled: false,
     format: 'yyyy-MM-dd',
+    teleport: true,
   },
 )
 
@@ -71,7 +75,10 @@ const inner = computed({
     :enable-time-picker="false"
     :auto-apply="true"
     :locale="zhCN"
-    teleport
+    :teleport="teleport"
+    :multi-calendars="range ? 2 : false"
+    :multi-calendars-solo="range"
+    :partial-range="false"
     :class="cn('date-picker', props.class)"
   />
 </template>

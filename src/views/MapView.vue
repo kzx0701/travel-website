@@ -17,7 +17,7 @@ import { useMapStore, type CityFilter } from '@/stores/map'
 import { useVisitRecordStore } from '@/stores/visitRecord'
 import { useResidenceStore } from '@/stores/residence'
 import { useTripStore } from '@/stores/trip'
-import type { City, CitySortKey, MapLevel } from '@/types'
+import type { City, CitySortKey, DatePrecision, MapLevel } from '@/types'
 
 const mapStore = useMapStore()
 const visitRecordStore = useVisitRecordStore()
@@ -143,6 +143,7 @@ async function handleTripSubmit(data: {
   name: string
   startDate: string
   endDate: string | null
+  datePrecision: DatePrecision
   purpose: string
   cities: City[]
 }): Promise<void> {
@@ -162,7 +163,7 @@ async function handleTripSubmit(data: {
           provinceName: city.provinceName,
           startDate: data.startDate,
           endDate: data.endDate,
-          datePrecision: 'day',
+          datePrecision: data.datePrecision,
           purpose: data.purpose,
           note: '',
           tripId: trip.id,

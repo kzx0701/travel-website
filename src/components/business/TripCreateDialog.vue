@@ -1,10 +1,11 @@
 <script setup lang="ts">
+import type { DateRange } from 'reka-ui'
 import { ref, computed, watch } from 'vue'
 import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import * as z from 'zod'
 import { toast } from 'vue-sonner'
-import { Plus, Check, X, ChevronsUpDown, MapPin } from '@lucide/vue'
+import { Plus, Check, X, ChevronsUpDown, MapPin, CalendarRange } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -23,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { DatePicker } from '@/components/ui/date-picker'
+import { RangeCalendar } from '@/components/ui/range-calendar'
 import {
   Popover,
   PopoverContent,
@@ -37,9 +38,17 @@ import {
   CommandItem,
   CommandList,
 } from '@/components/ui/command'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import PurposeSelect from './PurposeSelect.vue'
 import { cities as allCities } from '@/data/cities'
-import type { City } from '@/types'
+import type { City, DatePrecision } from '@/types'
 
 /**
  * TripCreateDialog - 添加行程对话框
@@ -49,9 +58,11 @@ import type { City } from '@/types'
  *  - 再为每个城市 visitRecordStore.create 一条带 tripId 的到达记录
  *  - 城市经 litCities computed 自动点亮，并关联到该行程
  *
- * 字段：行程名称 + 日期范围 + 出行目的 + 涉及城市（多选）
+ * 字段：行程名称 + 日期（时间点/时间范围）+ 出行目的 + 涉及城市（多选）
+ * 时间点：年月日三个下拉，仅年份必填，月/日可选 → 对应 datePrecision year/month/day
+ * 时间范围：shadcn RangeCalendar（Popover 触发，双月并排）→ datePrecision day，startDate + endDate
  * Props: visible, loading
- * Emits: submit({ name, startDate, endDate, purpose, cities }), cancel, update:visible
+ * Emits: submit({ name, startDate, endDate, datePrecision, purpose, cities }), cancel, update:visible
  */
 
 const props = withDefaults(
@@ -70,6 +81,7 @@ const emit = defineEmits<{
       name: string
       startDate: string
       endDate: string | null
+      datePrecision: DatePrecision
       purpose: string
       cities: City[]
     },
@@ -78,6 +90,72 @@ const emit = defineEmits<{
   'update:visible': [value: boolean]
 }>()
 
+// ---- 日期模式：时间点 vs 时间范围 ----
+type DateMode = 'point' | 'range'
+const dateMode = ref<DateMode>('point')
+
+// ---- 时间点模式：年/月/日（仅年份必填） ----
+const pointYear = ref<string>('') // 'YYYY'
+const pointMonth = ref<string>('') // '1-12' 或空
+const pointDay = ref<string>('') // '1-31' 或空
+
+// ---- 时间范围模式 ----
+// DateRange = { start?: DateValue; end?: DateValue }，来自 reka-ui
+// 初始为 null，用户在 RangeCalendar 中选择后由 v-model 写入
+const rangeValue = ref<DateRange | null>(null)
+// RangeCalendar Popover 开关
+const rangePopoverOpen = ref(false)
+
+// 触发器显示文本
+const rangeDisplayText = computed(() => {
+  const r = rangeValue.value
+  if (!r || (!r.start && !r.end)) return '选择日期范围'
+  const s = r.start ? formatDisplay(r.start.toString()) : ''
+  const e = r.end ? formatDisplay(r.end.toString()) : ''
+  if (s && e) return `${s} ~ ${e}`
+  if (s) return `${s} ~`
+  return `~ ${e}`
+})
+
+function formatDisplay(iso: string): string {
+  // 'YYYY-MM-DD' → 'YYYY/MM/DD'，避免与时间点模式格式冲突
+  return iso.replace(/-/g, '/')
+}
+
+const currentYear = new Date().getFullYear()
+const yearOptions = computed(() => {
+  const arr: number[] = []
+  for (let y = currentYear; y >= 1980; y--) arr.push(y)
+  return arr
+})
+const monthOptions = Array.from({ length: 12 }, (_, i) => ({
+  value: String(i + 1),
+  label: `${i + 1} 月`,
+}))
+
+// 根据已选年份/月份计算当月天数
+const dayOptions = computed(() => {
+  if (!pointYear.value) return []
+  const y = Number(pointYear.value)
+  const m = pointMonth.value ? Number(pointMonth.value) : null
+  // 未选月份时按 31 天兜底（实际提交时月份可选）
+  const daysInMonth = m
+    ? new Date(y, m, 0).getDate()
+    : 31
+  return Array.from({ length: daysInMonth }, (_, i) => ({
+    value: String(i + 1),
+    label: `${i + 1} 日`,
+  }))
+})
+
+// 月份变化时若已选日超出范围则清空
+watch(pointMonth, () => {
+  if (pointDay.value) {
+    const max = dayOptions.value.length
+    if (Number(pointDay.value) > max) pointDay.value = ''
+  }
+})
+
 // ---- zod schema ----
 const schema = toTypedSchema(
   z.object({
@@ -85,21 +163,16 @@ const schema = toTypedSchema(
       .string({ required_error: '请输入行程名称' })
       .min(1, '请输入行程名称')
       .max(100, '名称不超过 100 字'),
-    dateRange: z
-      .array(z.string())
-      .length(2, '请选择行程日期范围')
-      .or(z.null()),
     purpose: z
       .string({ required_error: '请选择出行目的' })
       .min(1, '请选择出行目的'),
   }),
 )
 
-const { handleSubmit, setFieldValue, resetForm } = useForm({
+const { handleSubmit, resetForm, setFieldValue } = useForm({
   validationSchema: schema,
   initialValues: {
     name: '',
-    dateRange: null as [string, string] | null,
     purpose: '',
   },
 })
@@ -142,10 +215,15 @@ watch(
       resetForm({
         values: {
           name: '',
-          dateRange: null,
           purpose: '',
         },
       })
+      dateMode.value = 'point'
+      pointYear.value = ''
+      pointMonth.value = ''
+      pointDay.value = ''
+      rangeValue.value = null
+      rangePopoverOpen.value = false
       selectedCities.value = []
       cityKeyword.value = ''
       cityPopoverOpen.value = false
@@ -162,28 +240,60 @@ function handleCancel(): void {
   close()
 }
 
-// DatePicker range 模式回传 [string, string] | null
-function handleDateRangeChange(
-  value: string | [string, string] | null,
-): void {
-  if (typeof value === 'string') return
-  setFieldValue('dateRange', value)
+/**
+ * 规范化日期并返回 { startDate, endDate, datePrecision }
+ * 时间点：仅年份必填，月/日可选 → year/month/day 精度
+ * 时间范围：startDate + endDate，精度 day
+ */
+function normalizeDate(): {
+  startDate: string
+  endDate: string | null
+  datePrecision: DatePrecision
+} | null {
+  if (dateMode.value === 'point') {
+    if (!pointYear.value) {
+      toast.warning('请至少选择年份')
+      return null
+    }
+    const y = pointYear.value
+    if (pointMonth.value && pointDay.value) {
+      const m = String(pointMonth.value).padStart(2, '0')
+      const d = String(pointDay.value).padStart(2, '0')
+      return { startDate: `${y}-${m}-${d}`, endDate: null, datePrecision: 'day' }
+    }
+    if (pointMonth.value) {
+      const m = String(pointMonth.value).padStart(2, '0')
+      return { startDate: `${y}-${m}-01`, endDate: null, datePrecision: 'month' }
+    }
+    return { startDate: `${y}-01-01`, endDate: null, datePrecision: 'year' }
+  }
+  // range：DateRange = { start?: DateValue; end?: DateValue }
+  const r = rangeValue.value
+  if (!r || !r.start || !r.end) {
+    toast.warning('请选择完整的日期范围')
+    return null
+  }
+  const start = r.start.toString() // 'YYYY-MM-DD'
+  const end = r.end.toString()
+  if (end < start) {
+    toast.warning('结束日期不能早于开始日期')
+    return null
+  }
+  return { startDate: start, endDate: end, datePrecision: 'day' }
 }
 
 const onSubmit = handleSubmit((values) => {
-  const range = values.dateRange
-  if (!range || range.length !== 2 || !range[0] || !range[1]) {
-    toast.warning('请选择行程日期范围')
-    return
-  }
+  const normalized = normalizeDate()
+  if (!normalized) return
   if (selectedCities.value.length === 0) {
     toast.warning('请至少选择一个涉及城市')
     return
   }
   emit('submit', {
     name: values.name.trim(),
-    startDate: range[0],
-    endDate: range[1],
+    startDate: normalized.startDate,
+    endDate: normalized.endDate,
+    datePrecision: normalized.datePrecision,
     purpose: values.purpose,
     cities: [...selectedCities.value],
   })
@@ -195,7 +305,7 @@ const onSubmit = handleSubmit((values) => {
     :open="visible"
     @update:open="(v) => emit('update:visible', v)"
   >
-    <DialogContent class="max-w-[480px]">
+    <DialogContent class="max-w-[640px]">
       <DialogHeader>
         <DialogTitle>添加行程</DialogTitle>
         <DialogDescription>
@@ -219,21 +329,103 @@ const onSubmit = handleSubmit((values) => {
           </FormItem>
         </FormField>
 
-        <!-- 日期范围 -->
-        <FormField v-slot="{ value }" name="dateRange">
-          <FormItem>
-            <FormLabel>日期范围</FormLabel>
-            <FormControl>
-              <DatePicker
-                :model-value="(value as [string, string] | null) ?? null"
-                range
-                class="w-full"
-                @update:model-value="handleDateRangeChange"
+        <!-- 日期（时间点 / 时间范围） -->
+        <div class="space-y-2">
+          <label class="text-sm font-medium leading-none">日期</label>
+          <Tabs :model-value="dateMode" @update:model-value="(v) => (dateMode = v as DateMode)" class="w-full">
+            <TabsList class="grid w-full grid-cols-2">
+              <TabsTrigger value="point">时间点</TabsTrigger>
+              <TabsTrigger value="range">时间范围</TabsTrigger>
+            </TabsList>
+          </Tabs>
+
+          <!-- 时间点：年/月/日三个下拉同行，仅年份必填 -->
+          <div v-if="dateMode === 'point'" class="flex gap-2">
+            <Select v-model="pointYear">
+              <SelectTrigger class="flex-1">
+                <SelectValue placeholder="年份" />
+              </SelectTrigger>
+              <SelectContent class="max-h-60">
+                <SelectItem
+                  v-for="y in yearOptions"
+                  :key="y"
+                  :value="String(y)"
+                  class="cursor-pointer transition-colors hover:bg-accent"
+                >
+                  {{ y }} 年
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <Select v-model="pointMonth">
+              <SelectTrigger class="w-24">
+                <SelectValue placeholder="月份" />
+              </SelectTrigger>
+              <SelectContent class="max-h-60">
+                <SelectItem
+                  v-for="m in monthOptions"
+                  :key="m.value"
+                  :value="m.value"
+                  class="cursor-pointer transition-colors hover:bg-accent"
+                >
+                  {{ m.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+            <Select
+              v-model="pointDay"
+              :disabled="!pointYear"
+            >
+              <SelectTrigger class="w-24">
+                <SelectValue placeholder="日期" />
+              </SelectTrigger>
+              <SelectContent class="max-h-60">
+                <SelectItem
+                  v-for="d in dayOptions"
+                  :key="d.value"
+                  :value="d.value"
+                  class="cursor-pointer transition-colors hover:bg-accent"
+                >
+                  {{ d.label }}
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <p v-if="dateMode === 'point'" class="text-xs text-muted-foreground">
+            年份必填，月份与日期可选
+          </p>
+
+          <!-- 时间范围：shadcn RangeCalendar（双月并排，Popover 触发） -->
+          <Popover v-else v-model:open="rangePopoverOpen">
+            <PopoverTrigger as-child>
+              <Button
+                type="button"
+                variant="outline"
+                role="combobox"
+                :aria-expanded="rangePopoverOpen"
+                class="w-full justify-between font-normal"
+              >
+                <span class="flex items-center gap-1.5">
+                  <CalendarRange class="size-4" />
+                  <span :class="rangeValue && (rangeValue.start || rangeValue.end) ? 'text-foreground whitespace-nowrap' : 'text-muted-foreground'">
+                    {{ rangeDisplayText }}
+                  </span>
+                </span>
+                <ChevronsUpDown class="size-4 shrink-0 opacity-50" />
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent class="w-auto p-0" align="start">
+              <RangeCalendar
+                :model-value="rangeValue as any"
+                :number-of-months="2"
+                locale="zh-CN"
+                :week-starts-on="1"
+                weekday-format="narrow"
+                class="rounded-md border-0 shadow-sm"
+                @update:model-value="(v: DateRange) => (rangeValue = v)"
               />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-        </FormField>
+            </PopoverContent>
+          </Popover>
+        </div>
 
         <!-- 出行目的 -->
         <FormField v-slot="{ value }" name="purpose">
