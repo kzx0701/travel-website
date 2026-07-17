@@ -131,6 +131,10 @@ function handleFilterChange(filter: CityFilter): void {
 const tripDialogVisible = ref(false)
 const tripCreating = ref(false)
 
+function getErrorMessage(error: unknown): string {
+  return error instanceof Error ? error.message : String(error)
+}
+
 /**
  * 创建行程并为涉及城市批量建立关联记录：
  *  1. tripStore.create 建行程
@@ -169,6 +173,32 @@ async function handleTripSubmit(data: {
       ),
     )
     const failed = results.filter((r) => r.status === 'rejected').length
+    if (failed > 0) {
+      const failedCities = results.flatMap((result, index) =>
+        result.status === 'rejected'
+          ? [
+              {
+                city: data.cities[index]?.name ?? '未知城市',
+                error: getErrorMessage(result.reason),
+              },
+            ]
+          : [],
+      )
+      console.error('添加行程时点亮城市失败', failedCities)
+    }
+
+    if (failed === data.cities.length) {
+      try {
+        await tripStore.remove(trip.id, { deleteRecords: false })
+      } catch (rollbackError) {
+        console.error('回滚空行程失败', rollbackError)
+      }
+      const firstReason =
+        results[0]?.status === 'rejected' ? getErrorMessage(results[0].reason) : '未知错误'
+      toast.error(`城市点亮失败，行程未创建：${firstReason}`)
+      return
+    }
+
     if (failed === 0) {
       toast.success(`行程已创建，已点亮 ${data.cities.length} 个城市`)
     } else {

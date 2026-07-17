@@ -5,7 +5,7 @@ import { useForm } from 'vee-validate'
 import { toTypedSchema } from '@vee-validate/zod'
 import * as z from 'zod'
 import { toast } from 'vue-sonner'
-import { Plus, Check, X, ChevronsUpDown, MapPin, CalendarRange } from '@lucide/vue'
+import { Plus, Check, X, ChevronsUpDown, MapPin, CalendarRange, Loader2 } from '@lucide/vue'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -222,8 +222,17 @@ function close(): void {
 }
 
 function handleCancel(): void {
+  if (props.loading) return
   emit('cancel')
   close()
+}
+
+/**
+ * loading 期间拦截 reka-ui Dialog 的关闭行为（ESC、点遮罩、点外部），
+ * 避免创建过程中途被打断导致数据不一致。
+ */
+function interceptClose(e: Event): void {
+  if (props.loading) e.preventDefault()
 }
 
 /**
@@ -304,7 +313,12 @@ watch([dateMode, pointYear, pointMonth, pointDay, rangeValue], () => {
 
 <template>
   <Dialog :open="visible" @update:open="(v) => emit('update:visible', v)">
-    <DialogContent class="max-w-[640px]">
+    <DialogContent
+      class="max-w-[640px] overflow-hidden"
+      @escape-key-down="interceptClose"
+      @pointer-down-outside="interceptClose"
+      @interact-outside="interceptClose"
+    >
       <DialogHeader>
         <DialogTitle>添加行程</DialogTitle>
         <DialogDescription>
@@ -312,7 +326,11 @@ watch([dateMode, pointYear, pointMonth, pointDay, rangeValue], () => {
         </DialogDescription>
       </DialogHeader>
 
-      <form class="space-y-4" @submit="onSubmit">
+      <form
+        class="space-y-4 transition-opacity"
+        :class="loading ? 'pointer-events-none opacity-50' : 'opacity-100'"
+        @submit="onSubmit"
+      >
         <!-- 行程名称 -->
         <FormField
           v-slot="{ componentField }"
@@ -543,10 +561,31 @@ watch([dateMode, pointYear, pointMonth, pointDay, rangeValue], () => {
           取消
         </Button>
         <Button size="sm" :disabled="loading" @click="onSubmit">
-          <Plus class="size-4" />
+          <Loader2 v-if="loading" class="size-4 animate-spin" />
+          <Plus v-else class="size-4" />
           {{ loading ? '创建中...' : '创建行程' }}
         </Button>
       </DialogFooter>
+
+      <!-- Loading 遮罩：覆盖整个 DialogContent（含右上角关闭按钮），
+           配合 interceptClose 阻止 ESC/点外部，避免创建过程中断 -->
+      <Transition
+        enter-active-class="transition-opacity duration-200"
+        leave-active-class="transition-opacity duration-150"
+        enter-from-class="opacity-0"
+        leave-to-class="opacity-0"
+      >
+        <div
+          v-if="loading"
+          class="absolute inset-0 z-10 flex flex-col items-center justify-center gap-3 bg-background/85 backdrop-blur-sm"
+        >
+          <Loader2 class="size-8 animate-spin text-primary" />
+          <p class="text-sm font-medium text-foreground">正在创建行程</p>
+          <p class="text-xs text-muted-foreground">
+            点亮 {{ selectedCities.length }} 个城市中，请稍候...
+          </p>
+        </div>
+      </Transition>
     </DialogContent>
   </Dialog>
 </template>

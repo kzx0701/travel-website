@@ -39,7 +39,7 @@ interface VisitRecordRow {
   province_name: string
   start_date: string
   end_date: string | null
-  date_precision: string
+  date_precision?: string | null
   purpose: string
   note: string | null
   trip_id: string | null
@@ -63,6 +63,26 @@ function mapRow(row: VisitRecordRow): VisitRecord {
     tripId: row.trip_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+  }
+}
+
+function isMissingDatePrecisionError(error: { message?: string } | null): boolean {
+  return error?.message?.includes("'date_precision' column of 'visit_records'") ?? false
+}
+
+function toInsertRow(data: VisitRecordInput, userId: string, includeDatePrecision: boolean) {
+  return {
+    user_id: userId,
+    city_code: data.cityCode,
+    city_name: data.cityName,
+    province_code: data.provinceCode,
+    province_name: data.provinceName,
+    start_date: data.startDate,
+    end_date: data.endDate ?? null,
+    ...(includeDatePrecision ? { date_precision: data.datePrecision } : {}),
+    purpose: data.purpose,
+    note: data.note ?? null,
+    trip_id: data.tripId ?? null,
   }
 }
 
@@ -96,23 +116,22 @@ export async function listByCity(cityCode: string): Promise<VisitRecord[]> {
  */
 export async function create(data: VisitRecordInput): Promise<VisitRecord> {
   const userId = await getCurrentUserId()
-  const { data: row, error } = await supabase
+  let { data: row, error } = await supabase
     .from('visit_records')
-    .insert({
-      user_id: userId,
-      city_code: data.cityCode,
-      city_name: data.cityName,
-      province_code: data.provinceCode,
-      province_name: data.provinceName,
-      start_date: data.startDate,
-      end_date: data.endDate ?? null,
-      date_precision: data.datePrecision,
-      purpose: data.purpose,
-      note: data.note ?? null,
-      trip_id: data.tripId ?? null,
-    })
+    .insert(toInsertRow(data, userId, true))
     .select('*')
     .single()
+
+  if (isMissingDatePrecisionError(error)) {
+    const retry = await supabase
+      .from('visit_records')
+      .insert(toInsertRow(data, userId, false))
+      .select('*')
+      .single()
+    row = retry.data
+    error = retry.error
+  }
+
   if (error) throw new Error(error.message)
   return mapRow(row as VisitRecordRow)
 }
@@ -133,12 +152,25 @@ export async function update(id: string, data: VisitRecordUpdate): Promise<Visit
   if (data.note !== undefined) update.note = data.note
   if (data.tripId !== undefined) update.trip_id = data.tripId
 
-  const { data: row, error } = await supabase
+  let { data: row, error } = await supabase
     .from('visit_records')
     .update(update)
     .eq('id', id)
     .select('*')
     .single()
+
+  if (isMissingDatePrecisionError(error) && data.datePrecision !== undefined) {
+    delete update.date_precision
+    const retry = await supabase
+      .from('visit_records')
+      .update(update)
+      .eq('id', id)
+      .select('*')
+      .single()
+    row = retry.data
+    error = retry.error
+  }
+
   if (error) throw new Error(error.message)
   return mapRow(row as VisitRecordRow)
 }
